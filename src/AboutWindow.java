@@ -22,6 +22,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.border.Border;
 
+
 public class AboutWindow extends JFrame {
 	
 	private static final long serialVersionUID = -1828611032197262558L;
@@ -36,6 +37,7 @@ public class AboutWindow extends JFrame {
             }
         };
         addWindowListener(exitListener);
+        
         
 		//////////////////////
 		//	Right side		//
@@ -86,13 +88,12 @@ public class AboutWindow extends JFrame {
 		pushToBox(rightTextBox, "~ unknown NPC names (all names should be mentioned by aliasname commands)");
 		pushToBox(rightTextBox, "~ commands with missed asterisks before them");
 		pushToBox(rightTextBox, "~ weird unrecognized words that don't fit the context are marked as 'something wrong at line XXX', make sure the NPCs don't have emty lines in the middle of their dialogues!");
-		pushToBox(rightTextBox, "~ unreachable blocks of code (code located below gotos)");
 		pushToBox(rightTextBox, "");
 		pushToBox(rightTextBox, "___ Send your feedback ___");
 		pushToBox(rightTextBox, "");
 		pushToBox(rightTextBox, "Please, send me your feedback and ideas about what errors should also be recognized, as well as undetected mistakes or other problems.");
 		pushToBox(rightTextBox, "");
-		pushToBox(rightTextBox, "Before using the program make sure you're having the latest version. Also, make sure the file has the UTF-8 encoding.");
+		pushToBox(rightTextBox, "Before using the program make sure you're having the latest version.");
 		
 		//////////////////////
 		//	Left side		//
@@ -116,7 +117,7 @@ public class AboutWindow extends JFrame {
 		
 		pushToBox(leftTextBox, "LoE .pscript Visualiser “Deeplie”");
 		pushToBox(leftTextBox, "Creator: Fess");
-		pushToBox(leftTextBox, "Version: 1.13.2"); 
+		pushToBox(leftTextBox, "Version: 1.10"); 
 		pushToBox(leftTextBox, ""); 
 		pushToBox(leftTextBox, "Poke me on Discord: Fess#2162");
 		pushToBox(leftTextBox, "Script Implementation Department"); 
@@ -169,6 +170,4 @@ public class AboutWindow extends JFrame {
 	    	desktop.browse(uri);
 	    }
 	}
-
-
 }

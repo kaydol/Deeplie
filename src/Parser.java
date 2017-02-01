@@ -24,7 +24,7 @@ public class Parser {
 	public void readFile(String filename) throws IOException {
 		File file = new File(filename);
 		if (!file.exists())
-			MainWindow.pushToLog("Error: no such file in directory '" + filename + "'");
+			MainWindow.pushToLog("  Error: no such file in directory '" + filename + "'");
 		text = Files.readAllLines(file.toPath(), Charset.forName("UTF-8"));
 		MainWindow.pushToLog("Info: finished reading file, " + text.size() + " lines total");
 	}
@@ -49,25 +49,19 @@ public class Parser {
 				continue;
 			}
 			
-			// " : "
-			m = (Pattern.compile("\\s:\\s")).matcher(str);
-			if (m.find()) { 
-				MainWindow.pushToLog("Error: ':' shouldn't be surrounded by two spaces at line " + (i+1));
-				continue;
-			}
 			
 			// "Text:Text" instead of "Name: Text" or "Text :Label" i.e. : should always has at least space around
 			// digits added to prevent shooting at <-1:10> alike constructions, used by hasitem? command
 			m = (Pattern.compile("[^\\s\\d]:[^\\s\\d]")).matcher(str);
 			if (m.find()) { 
-				MainWindow.pushToLog("Error: at least one space must be present near ':' at line " + (i+1));
+				MainWindow.pushToLog("  Error: at least one space must be present near ':' at line " + (i+1));
 				continue;
 			}
 			
 			// ">Text" instead of "> Text"
 			m = (Pattern.compile("^>[^\\s]")).matcher(str);
 			if (m.find()) { 
-				MainWindow.pushToLog("Error: > should be followed by space at line " + (i+1));
+				MainWindow.pushToLog("  Error: > should be followed by space at line " + (i+1));
 				continue;
 			}
 			
@@ -75,7 +69,7 @@ public class Parser {
 			m = (Pattern.compile("^>.*")).matcher(str);
 			if (m.find()) {
 				if (!str.matches(".*:\\w+$")) {
-					MainWindow.pushToLog("Error: missing label at line " + (i+1));
+					MainWindow.pushToLog("  Error: missing label at line " + (i+1));
 					continue;
 				}
 			}
@@ -83,27 +77,27 @@ public class Parser {
 			// missing command after asterisk
 			m = (Pattern.compile("\\*(.+)?")).matcher(str);
 			if (m.find() && m.group(1) == null) { 
-				MainWindow.pushToLog("Error: missing command after asterisk at line " + (i+1));
+				MainWindow.pushToLog("  Error: missing command after asterisk at line " + (i+1));
 				continue;
 			}
 			
 			// more than 1 space after asterisk 
 			m = (Pattern.compile("\\*\\s{2,}")).matcher(str);
 			if (m.find()) { 
-				MainWindow.pushToLog("Error: more than 1 space after asterisk at line " + (i+1));
+				MainWindow.pushToLog("  Error: more than 1 space after asterisk at line " + (i+1));
 				continue;
 			}
 			
 			// asterisk in ||
 			m = (Pattern.compile("\\|.*\\*.*\\|")).matcher(str);
 			if (m.find()) { 
-				MainWindow.pushToLog("Error: no asterisk allowed in '" + m.group() + "' at line " + (i+1));
+				MainWindow.pushToLog("  Error: no asterisk allowed in '" + m.group() + "' at line " + (i+1));
 				continue;
 			}
 			// *command ~ missed space after asterisk
 			m = (Pattern.compile("\\*(\\w+\\??)")).matcher(str);
 			if (m.find()) {
-				MainWindow.pushToLog("Error: missed space after asterisk in '" + m.group() + "' at line " + (i+1));
+				MainWindow.pushToLog("  Error: missed space after asterisk in '" + m.group() + "' at line " + (i+1));
 				continue;
 			}
 					
@@ -113,7 +107,7 @@ public class Parser {
 				if (psqript.commandExists(m.group(1))) {
 					Command c = psqript.findCommand(m.group(1));
 					if (c.hasLabel && !str.matches(".*:\\w+$")) {
-						MainWindow.pushToLog("Error: missing label for '" + m.group(1) + "' at line " + (i+1));
+						MainWindow.pushToLog("  Error: missing label for '" + m.group(1) + "' at line " + (i+1));
 						continue;
 					}
 				}
@@ -137,20 +131,15 @@ public class Parser {
 				if (psqript.commandExists(str_command)) {
 					Command c = psqript.findCommand(str_command);
 					if (str_args == null) {
-						MainWindow.pushToLog("Error: no arguments for '" + str_command + "' at line " + (i+1));
+						MainWindow.pushToLog("  Error: no arguments for '" + str_command + "' at line " + (i+1));
 						continue;
 					}
 					if (str_args.trim().isEmpty() || !c.accepts(str_args.trim())) {
-						MainWindow.pushToLog("Error: invalid argument '" + str_args.trim() + "' for " + str_command + " at line " + (i+1));
-						if (c.hasExamples()) {
-							MainWindow.pushToLog("Valid syntax:");
-							for (String example : c.getExamples())
-								MainWindow.pushToLog("         " + example);
-						}			
+						MainWindow.pushToLog("  Error: invalid argument '" + str_args.trim() + "' for " + str_command + " at line " + (i+1));
 						continue;
 					}
 				} else {
-					MainWindow.pushToLog("Error: unknown command '" + str_command + "' at line " + (i+1));
+					MainWindow.pushToLog("  Error: unknown command '" + str_command + "' at line " + (i+1));
 					continue;
 				}
 			}
@@ -161,20 +150,15 @@ public class Parser {
 				if (psqript.commandExists(m.group(1))) {
 					Command c = psqript.findCommand(m.group(1));
 					if (m.group(2) == null) {
-						MainWindow.pushToLog("Error: no arguments for '" + m.group(1) + "' at line " + (i+1));
+						MainWindow.pushToLog("  Error: no arguments for '" + m.group(1) + "' at line " + (i+1));
 						continue;
 					}
 					if (m.group(2).trim().isEmpty() || !c.accepts(m.group(2).trim())) {
-						MainWindow.pushToLog("Error: invalid argument '" + m.group(2).trim() + "' for " + m.group(1) + " at line " + (i+1));			
-						if (c.hasExamples()) {
-							MainWindow.pushToLog("Valid syntax:");
-							for (String example : c.getExamples())
-								MainWindow.pushToLog("         " + example);
-						}			
+						MainWindow.pushToLog("  Error: invalid argument '" + m.group(2).trim() + "' for " + m.group(1) + " at line " + (i+1));
 						continue;
 					}
 				} else {
-					MainWindow.pushToLog("Error: unknown command '" + m.group(1) + "' at line " + (i+1));
+					MainWindow.pushToLog("  Error: unknown command '" + m.group(1) + "' at line " + (i+1));
 					continue;
 				}
 			}
@@ -182,23 +166,23 @@ public class Parser {
 			// uncapitalized END in goto and :Labels
 			m = (Pattern.compile("(?<=goto )[Ee][Nn][Dd]|(?<=:)[Ee][Nn][Dd]")).matcher(str);
 			if (m.find() && !m.group().equals("END")) {
-				MainWindow.pushToLog("Error: uncapitalized END at line " + (i+1));
+				MainWindow.pushToLog("  Error: uncapitalized END at line " + (i+1));
 				continue;
 			}
 			// wrong capitalization in variables
 			m = (Pattern.compile("\\$[Pp][Ll][Aa][Yy][Ee][Rr][Nn][Aa][Mm][Ee]")).matcher(str);
 			if (m.find() && !m.group().equals("$PLAYERNAME")) {
-				MainWindow.pushToLog("Error: uncapitalized $PLAYERNAME at line " + (i+1));
+				MainWindow.pushToLog("  Error: uncapitalized $PLAYERNAME at line " + (i+1));
 				continue;
 			}
 			m = (Pattern.compile("\\$[Pp][Ll][Aa][Yy][Ee][Rr][Gg][Ee][Nn][Dd][Ee][Rr]")).matcher(str);
 			if (m.find() && !(m.group().equals("$PLAYERGENDER") || m.group().equals("$Playergender"))) {
-				MainWindow.pushToLog("Error: use either $PLAYERGENDER or $Playergender at line " + (i+1));
+				MainWindow.pushToLog("  Error: use either $PLAYERGENDER or $Playergender at line " + (i+1));
 				continue;
 			}
 			m = (Pattern.compile("\\$[Pp][Ll][Aa][Yy][Ee][Rr][Rr][Aa][Cc][Ee]")).matcher(str);
 			if (m.find() && !(m.group().equals("$PLAYERRACE") || m.group().equals("$Playerrace"))) {
-				MainWindow.pushToLog("Error: use either $PLAYERRACE or $Playerrace at line " + (i+1));
+				MainWindow.pushToLog("  Error: use either $PLAYERRACE or $Playerrace at line " + (i+1));
 				continue;
 			}
 			
@@ -213,7 +197,7 @@ public class Parser {
 				//String emotion_name = m.group(2);
 				
 				if (!npc_names.contains(npc_name)) {
-					MainWindow.pushToLog("Error: if '" + npc_name + "' is an NPC name, it should be mentioned by aliasname command, at line " + (i+1));
+					MainWindow.pushToLog("  Error: if '" + npc_name + "' is an NPC name, it should be mentioned by aliasname command, at line " + (i+1));
 					continue;
 				}
 			}
@@ -240,9 +224,9 @@ public class Parser {
 				}
 				if (!NPC) {
 					if (psqript.commandExists(m.group()))
-						MainWindow.pushToLog("Error: perhaps an asterisk was missed at line " + (i+1));
+						MainWindow.pushToLog("  Error: perhaps an asterisk was missed at line " + (i+1));
 					else
-						MainWindow.pushToLog("Error: something is wrong with line " + (i+1));
+						MainWindow.pushToLog("  Error: something is wrong with line " + (i+1));
 				}
 			}
 			
@@ -287,9 +271,7 @@ public class Parser {
 		for(Node node: pool) {
 			// Searching for labels in content of each node
 			for(String s: node.getContent()) {
-				s = s.trim();
-				s = s.replaceAll("goto ", ":"); // this is for catching <* goto Label> commands
-				if (s.matches(".+:\\w+$")) {
+				if (s.trim().matches(".+\\s:\\w+$")) {
 					// Most likely we reached a label here
 					String[] arr = s.split(":");
 					label = arr[arr.length - 1];
@@ -303,36 +285,14 @@ public class Parser {
 					
 					if (child == null) {
 						// ERROR: no such label 
-						int lineNumber = text.indexOf(s) + 1; 
-						// sometimes lineNumber can glitch and be zero; 
-						// this happens when Java fails to find that line in the 'text' array, and indexOf returns -1
+						int lineNumber = text.indexOf(s) + 1;
 						if (!label.equals("END"))
-							MainWindow.pushToLog("Error: no such label ':" + label + "' at line " + lineNumber);
+							MainWindow.pushToLog("  Error: no such label ':" + label + "' at line " + lineNumber);
 					} else {
 						if (!node.getChildren().contains(child)) {
 							child.addFather(node);
 							node.addChild(child);
 						}
-					}
-				}
-			}
-			
-			// Searching for areas with unreachable code in the current node, i.e. code after 'goto' command
-			boolean unreachable_code = false;
-			for(int i = 0; i < node.getContent().size(); ++i) {
-				String line = node.getContent().get(i).trim();
-				if (line.isEmpty() || line.charAt(0) == '#') 
-					continue;
-				if (line.matches("^\\* goto \\w+")) 
-				{
-					unreachable_code = true;
-				} 
-				else 
-				{
-					if (unreachable_code) {
-						int unreachable_starts_at = text.indexOf(line) + 1;
-						MainWindow.pushToLog("Error: the code at line " + unreachable_starts_at + " and below will never be executed");
-						break;
 					}
 				}
 			}
