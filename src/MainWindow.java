@@ -36,13 +36,18 @@ public class MainWindow extends JFrame {
 	public static File LastLoadedFile;
 	public static AboutWindow aboutWindow;
 	public static AdvancedWindow advancedWindow;
+	public static CommandsWindow commandsWindow;
 	private static FileNameExtensionFilter filter;
+	
+	public static String prefix_error = "   ";
+	public static String prefix_example = "         ";
+	public static String prefix_info = "";
+	public static String prefix_terminating = "";
 	
 	public MainWindow() {
 		
 		super("LoE .pscript Visualiser “Deeplie”");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		
 		
 		filter = new FileNameExtensionFilter("pscript file (.pscript .txt)", "pscript", "txt");
 		
@@ -86,8 +91,10 @@ public class MainWindow extends JFrame {
 					List<File> files = (List<File>) t.getTransferData(DataFlavor.javaFileListFlavor);
 					if (files.size() > 0) {
 						File f = files.get(0);
-						if (filter.accept(f))
+						if (filter.accept(f)) {
+							LastLoadedFile = f;
 							processFile(f.getAbsolutePath());
+						}
 						else 
 							pushToLog("Terminating: file should have either .txt or .pscript extension");
 					}
@@ -122,6 +129,16 @@ public class MainWindow extends JFrame {
 	}
 	
 	public static void pushToLog(String msg) {
+		
+		if (msg.trim().startsWith("Terminating:"))
+			msg = prefix_terminating + msg;
+		if (msg.trim().startsWith("Error:"))
+			msg = prefix_error + msg;
+		if (msg.trim().startsWith("Info:"))
+			msg = prefix_info + msg;
+		if (msg.trim().startsWith("Valid"))
+			msg = prefix_example + msg;
+		
 		log += msg + System.lineSeparator();
 		console.setText(log);
 	}
@@ -165,7 +182,7 @@ public class MainWindow extends JFrame {
         item_reloadFile.addActionListener(new ActionListener() {           
 	            public void actionPerformed(ActionEvent e) {
 	            	if (LastLoadedFile == null) {
-	            		pushToLog("Terminating: You didn't load any files yet, nothing to reload");
+	            		pushToLog(prefix_terminating + "Terminating: You didn't load any files yet, nothing to reload");
 	            		return;
 	            	}
 	            	if (LastLoadedFile.exists()) {
@@ -200,6 +217,20 @@ public class MainWindow extends JFrame {
 	            	}
 	            	advancedWindow.setVisible(true);
 	            	advancedWindow.toFront(); 
+	            }           
+	        });
+        
+        JMenuItem item_openCommands = new JMenuItem("Supported commands");
+        item_openCommands.setFont(font);
+        advancedMenu.add(item_openCommands);
+        item_openCommands.addActionListener(new ActionListener() {           
+	            public void actionPerformed(ActionEvent e) {
+	            	if (commandsWindow == null) {
+	            		commandsWindow = new CommandsWindow();	
+	            		return;
+	            	}
+	            	commandsWindow.setVisible(true);
+	            	commandsWindow.toFront(); 
 	            }           
 	        });
         

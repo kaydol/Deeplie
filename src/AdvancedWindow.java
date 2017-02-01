@@ -41,10 +41,9 @@ public class AdvancedWindow extends JFrame {
 		JPanel background = new JPanel(new GridLayout(7,1));
 		background.setBorder(outer);
 		
-		
 		JCheckBox box_doubleSpace = new JCheckBox("Put 2 spaces after the end of each sentence and 1 after commas");
 		JCheckBox box_asteriskSpace = new JCheckBox("Add 1 space after each asterisk");
-		JCheckBox box_speechSpace = new JCheckBox("Add a space before speech in NPCNAME:Speech");
+		JCheckBox box_speechSpace = new JCheckBox("Add a space before Speech in NPCNAME:Speech");
 		JCheckBox box_replySpace = new JCheckBox("Add a space after each > symbol");
 		JCheckBox box_capitalize = new JCheckBox("Captialize $PLAYERNAME and every END in labels and gotos");
 		
@@ -70,9 +69,11 @@ public class AdvancedWindow extends JFrame {
             	
             	for (int i = 0; i < text.size(); ++i) {
             		String s = text.get(i).trim();
+            		if (s.isEmpty())
+            			continue;
             		
-            		if (box_doubleSpace.isSelected()) {
-            			s = s.replaceAll("([!?.])\\s([^\\s])", "$1  $2");
+            		if (box_doubleSpace.isSelected() && s.charAt(0) != '*') {
+            			s = s.replaceAll("([!?.])\\s([^\\s\\.])", "$1  $2");
             			s = s.replaceAll(",([^\\s])", ",  $1");
             		}
             		if (box_asteriskSpace.isSelected())
@@ -103,8 +104,6 @@ public class AdvancedWindow extends JFrame {
 				}
             }           
         });
-		
-		
 		
 		background.add(box_doubleSpace);
 		background.add(box_asteriskSpace);
