@@ -3,6 +3,7 @@ import java.awt.Color;
 import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.GridLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -48,6 +49,7 @@ public class AboutWindow extends JFrame {
 		background.setBorder(outer);
 
 		JTextArea rightTextBox = new JTextArea();
+		rightTextBox.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 5));
 		rightTextBox.setLineWrap(true);
 		rightTextBox.setWrapStyleWord(true);
 		JScrollPane scrollpane = new JScrollPane(rightTextBox);
@@ -56,43 +58,26 @@ public class AboutWindow extends JFrame {
 		rightTextBox.setDisabledTextColor(Color.BLACK);
 		rightTextBox.setEditable(false);
 		
-		pushToBox(rightTextBox, "This program was designed for helping writers and script implementators in their tedious work with pscript files.");
+		pushToBox(rightTextBox, "This program was designed for helping writers and script implementers in their tedious work with pscript files.");
 		pushToBox(rightTextBox, "");
-		pushToBox(rightTextBox, "It graphically represents the dialogue trees based on recognized goto and :label keywords. "
-				+ "Red node is the start of each tree, it means it doesn't have any goto leading into itself, "
-				+ "and that it gonna need a jump to them based on a 'queststage?' command in the beginning of the file.");
+		pushToBox(rightTextBox, "It graphically represents all dialogue trees and shows mistakes that need to be fixed in order for game server to execute them right.");
 		pushToBox(rightTextBox, "");
 		pushToBox(rightTextBox, "___ Tips ___");
 		pushToBox(rightTextBox, "");
+		pushToBox(rightTextBox, "~ Hit the `Documentation` button on the left and read what Deeplie has to say");
 		pushToBox(rightTextBox, "~ You can drag & drop .pscript files into the program window to open them quickly");
 		pushToBox(rightTextBox, "~ Use RightMouseButton and MouseWheel for navigating in the canvas");
 		pushToBox(rightTextBox, "~ You can move trees by dragging red nodes with LeftMouseButton");
-		pushToBox(rightTextBox, "~ pscript file is just a .txt file with .pscript instead of .txt");
-		pushToBox(rightTextBox, "");
-		pushToBox(rightTextBox, "___ Things that shown as errors ___");
-		pushToBox(rightTextBox, "");
-		pushToBox(rightTextBox, "~ uncapitalized $PLAYERNAME & ENDs in labels and gotos");
-		pushToBox(rightTextBox, "~ QuestIDs with spaces\\punctuation in them");
-		pushToBox(rightTextBox, "~ writing '>Text' instead of '> Text'");
-		pushToBox(rightTextBox, "~ '> Text' with missing :label at the end of the line");
-		pushToBox(rightTextBox, "~ having an asterisk in |...|");
-		pushToBox(rightTextBox, "~ missed space\\too many spaces after asterisk");
-		pushToBox(rightTextBox, "~ no :label after commands that use them, i.e. commands with ? mark");
-		pushToBox(rightTextBox, "~ unknown command OR invalid arguments");
-		pushToBox(rightTextBox, "~ having a :LabelName without having a [LabelName]");
-		pushToBox(rightTextBox, "~ using commands without providing any arguments");
-		pushToBox(rightTextBox, "~ missing spaces around ':', at least one space must be present");
-		pushToBox(rightTextBox, "~ asterisks that ain't followed by commands");
-		pushToBox(rightTextBox, "~ unknown NPC names (all names should be mentioned by aliasname commands)");
-		pushToBox(rightTextBox, "~ commands with missed asterisks before them");
-		pushToBox(rightTextBox, "~ weird unrecognized words that don't fit the context are marked as 'something wrong at line XXX', make sure the NPCs don't have emty lines in the middle of their dialogues!");
-		pushToBox(rightTextBox, "~ unreachable blocks of code (code located below gotos)");
+		pushToBox(rightTextBox, "~ You can move the slider between canvas and text area to enlarge the preferable area");
+		pushToBox(rightTextBox, "~ If you made some changes in the file, click `File > Reload file` button to quickly update the state");
+		pushToBox(rightTextBox, "~ You can auto-correct some of the common mistakes in `Advanced > Advanced editing` menu.");
+		
 		pushToBox(rightTextBox, "");
 		pushToBox(rightTextBox, "___ Send your feedback ___");
 		pushToBox(rightTextBox, "");
-		pushToBox(rightTextBox, "Please, send me your feedback and ideas about what errors should also be recognized, as well as undetected mistakes or other problems.");
+		pushToBox(rightTextBox, "My Discord is on the left, see `Creator` line. Please, send me your feedback and ideas about what errors should also be recognized, as well as undetected mistakes or other problems.");
 		pushToBox(rightTextBox, "");
-		pushToBox(rightTextBox, "Before using the program make sure you're having the latest version. Also, make sure the file has the UTF-8 encoding.");
+		pushToBox(rightTextBox, "Before using the program, make sure you're having the latest version. Also, make sure the file has the `UTF-8 (without BOM)` encoding.");
 		
 		//////////////////////
 		//	Left side		//
@@ -115,11 +100,25 @@ public class AboutWindow extends JFrame {
 		left.add(leftTextBox, BorderLayout.CENTER);
 		
 		pushToBox(leftTextBox, "LoE .pscript Visualiser “Deeplie”");
-		pushToBox(leftTextBox, "Creator: Fess");
-		pushToBox(leftTextBox, "Version: 1.13.2"); 
+		pushToBox(leftTextBox, "Creator: Fess#2162");
+		pushToBox(leftTextBox, "Version: 1.16"); 
 		pushToBox(leftTextBox, ""); 
-		pushToBox(leftTextBox, "Poke me on Discord: Fess#2162");
-		pushToBox(leftTextBox, "Script Implementation Department"); 
+		pushToBox(leftTextBox, "LoE Script Implementation DEP"); 
+		
+		
+		JButton docsButton = new JButton("Documentation"); //Download the latest version
+		docsButton.addActionListener(new ActionListener() {           
+            public void actionPerformed(ActionEvent e) {
+            	
+				try {
+        			openWebpage(new URL("https://docs.google.com/document/d/1Lr4vJJkKFg45KI_iaNwiHohFhZ-xJHtX3U2vz3U1rrQ/edit?usp=sharing"));
+        		} catch (MalformedURLException e1) {
+        			e1.printStackTrace();
+        		} catch (Exception e1) {
+        			e1.printStackTrace();
+        		}
+            }       
+        });
 		
 		JButton updateButton = new JButton("Download the latest version"); //Download the latest version
 		updateButton.addActionListener(new ActionListener() {           
@@ -135,12 +134,25 @@ public class AboutWindow extends JFrame {
             }       
         });
 		
-		JPanel buttHolder = new JPanel(new BorderLayout());
-		buttHolder.setBorder(BorderFactory.createEmptyBorder(15, 0, 0, 15));
-		buttHolder.add(updateButton);
+		
+		JPanel docsButtHolder = new JPanel(new BorderLayout());
+		docsButtHolder.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 15));
+		docsButtHolder.add(docsButton);
+		
+		JPanel updButtHolder = new JPanel(new BorderLayout());
+		updButtHolder.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 15));
+		updButtHolder.add(updateButton);
 		
 		
-		left.add(buttHolder, BorderLayout.SOUTH);
+		JPanel buttsBackground = new JPanel(new GridLayout(2, 1)); 
+		buttsBackground.add(docsButtHolder);
+		buttsBackground.add(updButtHolder);
+		
+		
+		
+		
+		left.add(buttsBackground, BorderLayout.SOUTH);
+		
 		
 		//////////////////////
 		//	Adding			//
@@ -149,13 +161,16 @@ public class AboutWindow extends JFrame {
 		background.add(left, BorderLayout.WEST);
 		background.add(scrollpane, BorderLayout.CENTER);
 		
+		
 		setLayout(new BorderLayout());
 		add(background, BorderLayout.CENTER);
+		setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("DeeplieConfused.png")));
 		
 		setPreferredSize(new Dimension(700, 500));
 		pack();
 		setLocationRelativeTo(Main.window);
 		setVisible(true);
+		
 	}
 	
 	private static void pushToBox(JTextArea area, String str) {

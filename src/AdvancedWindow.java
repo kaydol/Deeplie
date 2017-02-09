@@ -1,7 +1,9 @@
 
+import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
@@ -111,11 +113,17 @@ public class AdvancedWindow extends JFrame {
 		background.add(box_replySpace);
 		background.add(box_capitalize);
 		background.add(new JLabel(""));
-		background.add(commitButton);
+		
+		
+		JPanel buttHolder = new JPanel(new BorderLayout());
+		buttHolder.setBorder(BorderFactory.createEmptyBorder(0, 80, 0, 80));
+		buttHolder.add(commitButton, BorderLayout.CENTER);
+		
+		background.add(buttHolder);
 		
 		add(background);
 		
-		
+		setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("DeeplieConfused.png")));
 		setPreferredSize(new Dimension(450, 280));
 		pack();
 		setLocationRelativeTo(Main.window);

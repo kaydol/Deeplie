@@ -102,7 +102,7 @@ public class Canvas extends JPanel {
 		int y = (int) Math.round((position.getY() - nodesize / 2 - shiftY) * scale);
 		int size = (int) Math.round(nodesize * scale);
 		
-		Font font = new Font("Verdana", Font.BOLD, 11);
+		Font font = new Font("Verdana", Font.TRUETYPE_FONT, 12);
 		
 		if (node.getFathers().size() == 0)
 			g.setColor(Color.RED);

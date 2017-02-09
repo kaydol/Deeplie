@@ -2,6 +2,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Toolkit;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
@@ -32,7 +33,7 @@ public class CommandsWindow extends JFrame {
         };
         addWindowListener(exitListener);
 		
-		//Border inner = BorderFactory.createLineBorder(Color.GRAY);
+		Border inner = BorderFactory.createLineBorder(Color.GRAY);
     	Border outer = BorderFactory.createEmptyBorder(15, 15, 15, 15);
 		JPanel background = new JPanel(new BorderLayout());
 		Font font = new Font("Verdana", Font.PLAIN, 12);
@@ -40,15 +41,17 @@ public class CommandsWindow extends JFrame {
 		////////////
 		
 		JTextArea commandDesc = new JTextArea();
+		commandDesc.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 5));
 		commandDesc.setLineWrap(true);
 		commandDesc.setWrapStyleWord(true);
 		commandDesc.setFont(new Font("Verdana", Font.PLAIN, 12));
 		commandDesc.setDisabledTextColor(Color.BLACK);
 		commandDesc.setEditable(false);
 		
+		JScrollPane commandDescPane = new JScrollPane(commandDesc);
+		commandDescPane.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createEmptyBorder(0, 15, 0, 0), inner));
 		
-		background.add(new JScrollPane(commandDesc), BorderLayout.CENTER);
-		
+		background.add(commandDescPane, BorderLayout.CENTER);
 		
 		////////////
 
@@ -75,16 +78,18 @@ public class CommandsWindow extends JFrame {
 		
 		list.setSelectedIndex(0);
 		
+		list.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+		
 		background.setBorder(outer);
 		background.add(new JScrollPane(list), BorderLayout.WEST);
 		
 		////////////
 		
 		add(background);
+		setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("DeeplieConfused.png")));
 		setPreferredSize(new Dimension(850, 400));
 		pack();
 		setLocationRelativeTo(Main.window);
-		
 		setVisible(true);
 	}
 	

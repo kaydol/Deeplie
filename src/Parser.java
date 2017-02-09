@@ -14,8 +14,10 @@ public class Parser {
 	private List<String> text;
 	private List<Node> trees;
 	private List<Node> pool;
+	private Syntax pscript;
 	
 	public Parser(String filename) throws IOException {
+		pscript = new Syntax();
 		readFile(filename);
 		performAnalysis();
 		buildTree();
@@ -29,18 +31,32 @@ public class Parser {
 		MainWindow.pushToLog("Info: finished reading file, " + text.size() + " lines total");
 	}
 	
-	public void performAnalysis() {
+	private void performAnalysis() {
 		String str;
 		Matcher m;
-		
-		Syntax psqript = new Syntax();
+
 		List<String> npc_names = new ArrayList<String>();
+		
+		Pattern ValidSpeechName = Pattern.compile("^([\\w\\s]+)( \\(\\w+\\))?"); // Name (emotion):
+		Pattern ValidSpeechText = Pattern.compile("[\\w\\s;,\\.!\\?\\$’'\"-“”]+"); // NO ':' allowed!
+		Pattern ValidCommand = Pattern.compile("[\\w\\?\\s:<>=-]+"); // command <args> :Label
+		Pattern ValidCondition = Pattern.compile("[\\w\\?\\s:<>=-\\|^&]+");
+		Pattern ValidLabel = Pattern.compile("^\\[\\w+\\]");
 		
 		for (int i = 0; i < text.size(); ++i) {
 			str = text.get(i).trim();
 			
-			if (str.isEmpty() || str.charAt(0) == '#')
+			if (str.isEmpty() || str.startsWith("#"))
 				continue;
+			
+			if (str.startsWith("*") && !str.matches("\\*" + ValidCommand.pattern())) {
+				MainWindow.pushToLog("Error: inappropriate symbol(s) at line " + (i+1));
+				continue;
+			}
+			if (str.startsWith("?") && !str.matches("\\?" + ValidCondition.pattern())) {
+				MainWindow.pushToLog("Error: inappropriate symbol(s) at line " + (i+1));
+				continue;
+			}
 			
 			m = (Pattern.compile("\\* aliasname <([\\w]+)> <([\\w\\s]+)>")).matcher(str);
 			if (m.find()) { 
@@ -71,8 +87,8 @@ public class Parser {
 				continue;
 			}
 			
-			// "> Text" with missing label at the end
-			m = (Pattern.compile("^>.*")).matcher(str);
+			// "> Text" or "? condition" with missing :Label at the end
+			m = (Pattern.compile("^>.*|^\\?.*")).matcher(str);
 			if (m.find()) {
 				if (!str.matches(".*:\\w+$")) {
 					MainWindow.pushToLog("Error: missing label at line " + (i+1));
@@ -80,105 +96,83 @@ public class Parser {
 				}
 			}
 			
-			// missing command after asterisk
-			m = (Pattern.compile("\\*(.+)?")).matcher(str);
+			// Checking multi-conditional lines: `? command1 args ([|&^] command2 args...) :Label`
+			m = (Pattern.compile("^\\?(.*):\\w+$")).matcher(str);
+			if (m.find()) {
+				if (!parse(m.group(1), true, true, i+1))
+					continue;
+			}
+			
+			// Check code between pipelines in Optional Responses
+			m = (Pattern.compile("(?<=\\|)(.*)(?=\\|)")).matcher(str);
+			if (m.find() && str.startsWith(">")) {
+				if (!parse(m.group(1), true, true, i+1))
+					continue;
+			}
+			
+			// Missed pipe in Optional Responses
+			m = (Pattern.compile("\\|(.*\\|)?")).matcher(str);
+			if (m.find() && str.startsWith(">") && m.group(1) == null) {
+				MainWindow.pushToLog("Error: the second pipe symbol was missed in the optional response at line " + (i+1));
+				continue;
+			}
+			
+			
+			// Missing command after asterisk\?
+			m = (Pattern.compile("^[?*](.+)?")).matcher(str);
 			if (m.find() && m.group(1) == null) { 
-				MainWindow.pushToLog("Error: missing command after asterisk at line " + (i+1));
+				MainWindow.pushToLog("Error: missing command after asterisk\\questionmark at line " + (i+1));
 				continue;
 			}
 			
-			// more than 1 space after asterisk 
-			m = (Pattern.compile("\\*\\s{2,}")).matcher(str);
+			// More than 1 space after asterisk\?
+			m = (Pattern.compile("^[?*]\\s{2,}")).matcher(str);
 			if (m.find()) { 
-				MainWindow.pushToLog("Error: more than 1 space after asterisk at line " + (i+1));
+				MainWindow.pushToLog("Error: more than 1 space after asterisk\\questionmark at line " + (i+1));
 				continue;
 			}
 			
-			// asterisk in ||
-			m = (Pattern.compile("\\|.*\\*.*\\|")).matcher(str);
-			if (m.find()) { 
-				MainWindow.pushToLog("Error: no asterisk allowed in '" + m.group() + "' at line " + (i+1));
+			// `*command` ~ missed space after asterisk
+			m = (Pattern.compile("[?*](\\w+\\??)")).matcher(str);
+			if (m.find()) {
+				MainWindow.pushToLog("Error: missed space after asterisk\\questionmark in '" + m.group() + "' at line " + (i+1));
 				continue;
 			}
-			// *command ~ missed space after asterisk
-			m = (Pattern.compile("\\*(\\w+\\??)")).matcher(str);
+			
+			// TODO this check most likely can be rewritten in a better way
+			// no :Label for commands that use them, i.e. commands with ?:  "* commandname? <args> :Label"
+			m = (Pattern.compile("\\* (\\w+\\??).*")).matcher(str);
 			if (m.find()) {
-				MainWindow.pushToLog("Error: missed space after asterisk in '" + m.group() + "' at line " + (i+1));
-				continue;
-			}
-					
-			// no goto label for commands that use them, i.e. commands with ?:  "* commandname? args :label"
-			m = (Pattern.compile("\\* (\\w+\\??) .*")).matcher(str);
-			if (m.find()) {
-				if (psqript.commandExists(m.group(1))) {
-					Command c = psqript.findCommand(m.group(1));
-					if (c.hasLabel && !str.matches(".*:\\w+$")) {
+				if (pscript.commandExists(m.group(1))) {
+					Command c = pscript.findCommand(m.group(1));
+					if (c.isConditional() && !str.matches(".*:\\w+$")) {
 						MainWindow.pushToLog("Error: missing label for '" + m.group(1) + "' at line " + (i+1));
 						continue;
 					}
+				} else {
+					// unknown commands were already caught earlier
 				}
 			}
 			
-			// unknown command OR invalid arguments
-			m = (Pattern.compile("\\* (\\w+\\??)(.+)?(?=:)|\\* (\\w+\\??)(.+)?")).matcher(str);
+			
+			// Unknown command OR invalid arguments
+			m = (Pattern.compile("\\*(.+)?(?=:)|\\*(.+)?")).matcher(str);
 			if (m.find()) {
 				// such a spike was made because hasItem contains ':' in its argument and has a :label at the end 
 				// this regexp either goes up to the latest ':' in the line or to the end of the line if none ':' was found
-				String str_command, str_args;
+				String expression;
 				// This 'if' block is used because of '|' operation in RegExp, it either returns groups 1-2 or 3-4
 				if (m.group(1) != null) {
-					str_command = m.group(1);
-					str_args = m.group(2);
+					expression = m.group(1);
 				} else {
-					str_command = m.group(3);
-					str_args = m.group(4);
+					expression = m.group(2);
 				}
 				
-				if (psqript.commandExists(str_command)) {
-					Command c = psqript.findCommand(str_command);
-					if (str_args == null) {
-						MainWindow.pushToLog("Error: no arguments for '" + str_command + "' at line " + (i+1));
-						continue;
-					}
-					if (str_args.trim().isEmpty() || !c.accepts(str_args.trim())) {
-						MainWindow.pushToLog("Error: invalid argument '" + str_args.trim() + "' for " + str_command + " at line " + (i+1));
-						if (c.hasExamples()) {
-							MainWindow.pushToLog("Valid syntax:");
-							for (String example : c.getExamples())
-								MainWindow.pushToLog("         " + example);
-						}			
-						continue;
-					}
-				} else {
-					MainWindow.pushToLog("Error: unknown command '" + str_command + "' at line " + (i+1));
+				if (!parse(expression, false, false, i+1))
 					continue;
-				}
 			}
 			
-			// unknown command OR invalid arguments in optional responses |command args|
-			m = (Pattern.compile("\\|(\\w+\\??)( [^\\|]+)?\\|")).matcher(str);
-			if (m.find()) {
-				if (psqript.commandExists(m.group(1))) {
-					Command c = psqript.findCommand(m.group(1));
-					if (m.group(2) == null) {
-						MainWindow.pushToLog("Error: no arguments for '" + m.group(1) + "' at line " + (i+1));
-						continue;
-					}
-					if (m.group(2).trim().isEmpty() || !c.accepts(m.group(2).trim())) {
-						MainWindow.pushToLog("Error: invalid argument '" + m.group(2).trim() + "' for " + m.group(1) + " at line " + (i+1));			
-						if (c.hasExamples()) {
-							MainWindow.pushToLog("Valid syntax:");
-							for (String example : c.getExamples())
-								MainWindow.pushToLog("         " + example);
-						}			
-						continue;
-					}
-				} else {
-					MainWindow.pushToLog("Error: unknown command '" + m.group(1) + "' at line " + (i+1));
-					continue;
-				}
-			}
-			
+
 			// uncapitalized END in goto and :Labels
 			m = (Pattern.compile("(?<=goto )[Ee][Nn][Dd]|(?<=:)[Ee][Nn][Dd]")).matcher(str);
 			if (m.find() && !m.group().equals("END")) {
@@ -202,47 +196,72 @@ public class Parser {
 				continue;
 			}
 			
-			// unknown NPC name
+			// Unknown NPC name
 			boolean line_contains_npc_name = false;
-			m = (Pattern.compile("^([\\w\\s]+)( \\(\\w+\\))?:.+")).matcher(str);
+			//m = (Pattern.compile("^([\\w\\s]+)( \\(\\w+\\))?:.+")).matcher(str);
+			m = (Pattern.compile("^[^?*>].+(?=:)")).matcher(str);
 			if (m.find()) {
+				String npc_name = m.group().trim();
+				String emotion = "";
 				
-				line_contains_npc_name = true;
+				if (npc_name.matches(ValidSpeechName.pattern())) {
+					m = (Pattern.compile("^([\\w\\s]+)( \\(\\w+\\))?")).matcher(npc_name);
+					if (m.find()) {
+						line_contains_npc_name = true;
+						npc_name = m.group(1).trim();
+						if (m.group(2) != null)
+							emotion = m.group(2).trim();
+						if (!npc_names.contains(npc_name)) {
+							MainWindow.pushToLog("Error: if '" + npc_name + "' is an NPC name, it should be mentioned by aliasname command, at line " + (i+1));
+							continue;
+						}
+					}	
+				} else {
+					MainWindow.pushToLog("Error: using colons in speech is forbidden, at line " + (i+1));
+					continue;
+				}
 				
-				String npc_name = m.group(1);
-				//String emotion_name = m.group(2);
-				
-				if (!npc_names.contains(npc_name)) {
-					MainWindow.pushToLog("Error: if '" + npc_name + "' is an NPC name, it should be mentioned by aliasname command, at line " + (i+1));
+			}
+			
+			// Checking NPC speech in NPCName: `speech`
+			if (line_contains_npc_name) {
+				m = (Pattern.compile("(?<=:).+")).matcher(str);
+				if (m.find() && !m.group().matches(ValidSpeechText.pattern())) {
+					MainWindow.pushToLog("Error: inappropriate symbol(s) at line " + (i+1));
 					continue;
 				}
 			}
 			
 			// suspicious words that passed all previous checks
-			m = (Pattern.compile("^\\w+")).matcher(str);
-			if (m.find()) {	
+			m = (Pattern.compile("^.+")).matcher(str);
+			if (m.find()) {
+				if (str.startsWith("*")) // Command or Single condition
+					continue;
+				if (str.startsWith("?")) // Multi-conditional statement
+					continue;
+				if (str.startsWith(">")) // Response
+					continue;
+				if (str.matches(ValidLabel.pattern())) // Label
+					continue;
 				// checking if this a part of NPC phrase: we have to go up to see if there was a speaking NPC
 				boolean NPC = line_contains_npc_name;
 				if (!line_contains_npc_name) {
 					for (int j = i-1; j > 0; --j) {
 						String s = text.get(j).trim();
-						if (s.isEmpty())
-							break;
-						if (s.matches("\\[\\w+\\]"))
-							break;
-						if (s.matches("^[\\w\\s]+( \\(\\w+\\))?:.+")) {
+						if (s.matches(ValidSpeechName.pattern() + ":.*")) { // NPCName (emotion): 
 							NPC = true;
 							break;
 						}
-						if (s.matches("[\\w\\s;,\\(\\)\\.!\\?]+"))
+						if (s.isEmpty() || s.startsWith("#") || s.matches(ValidSpeechText.pattern())) // part of the speech or comment
 							continue;
+						break;
 					}
 				}
 				if (!NPC) {
-					if (psqript.commandExists(m.group()))
+					if (pscript.commandExists(m.group()))
 						MainWindow.pushToLog("Error: perhaps an asterisk was missed at line " + (i+1));
 					else
-						MainWindow.pushToLog("Error: something is wrong with line " + (i+1));
+						MainWindow.pushToLog("Error: inappropriate symbol(s) at line " + (i+1));
 				}
 			}
 			
@@ -251,10 +270,11 @@ public class Parser {
 		
 	}
 	
-	public void buildTree() {
+	private void buildTree() {
 		
 		// Gathering all nodes in one pool
 		String label = null;
+		List<String> usedLabels = new ArrayList<String>();
 		List<String> content = new ArrayList<String>();
 		trees = new ArrayList<Node>();
 		pool = new ArrayList<Node>();
@@ -266,12 +286,20 @@ public class Parser {
 			if (p.matches("^\\[\\w+\\]") || currentline == text.size()) {
 				// reached another node
 				if (label != null) {
+					usedLabels.add(label);
+					if (currentline == text.size())
+						content.add(p);
 					pool.add(new Node(label, content));
+					if (currentline == text.size())
+						break;
 				} else {
 					//shoots only once
 					//content here contains the text above the first [label]
 				}
 				label = p;
+				if (usedLabels.contains(label))
+					MainWindow.pushToLog("Error: duplicate label name " + label + " at line " + currentline);
+
 				content = new ArrayList<String>();
 			}
 			content.add(p);
@@ -317,16 +345,38 @@ public class Parser {
 				}
 			}
 			
-			// Searching for areas with unreachable code in the current node, i.e. code after 'goto' command
+			// Searching for nodes with missing '* goto Label' at the and
+			boolean found_reliable_exit_point = false;
+			for(int i = node.getContent().size() - 1; i > 0; --i) {
+				String line = node.getContent().get(i).trim();
+				if (line.isEmpty() || line.charAt(0) == '#') 
+					continue;
+				// seeking for either goto or reliable dialogue answer that will 100% lead us out of the current node
+				// dialogue answer must not contain conditional expression in order to be `reliable`, hehe
+				if (line.matches("^\\* goto \\w+$|^> [^|]+:(\\w+)$")) 
+				{
+					found_reliable_exit_point = true;
+					break;
+				} 
+			}
+			if (!found_reliable_exit_point) {
+				int linenumber = text.indexOf(node.getLabel()) + 1;
+				MainWindow.pushToLog("Error: no reliable exit point at node " + node.getLabel() + " starting at line " + linenumber);
+				break;
+			}
+			
+			
+			
+			// Searching for areas with unreachable code in the current node, i.e. code after 'goto' command, or code after answer options
 			boolean unreachable_code = false;
 			for(int i = 0; i < node.getContent().size(); ++i) {
 				String line = node.getContent().get(i).trim();
 				if (line.isEmpty() || line.charAt(0) == '#') 
 					continue;
-				if (line.matches("^\\* goto \\w+")) 
+				if (line.matches("^\\* goto \\w+|^>.+")) 
 				{
 					unreachable_code = true;
-				} 
+				}
 				else 
 				{
 					if (unreachable_code) {
@@ -336,6 +386,8 @@ public class Parser {
 					}
 				}
 			}
+			
+			
 		}
 		
 		// Counting the number of trees
@@ -348,6 +400,53 @@ public class Parser {
 		MainWindow.pushToLog("Info: parser finished its job");
 		
 	}
+	
+	private boolean parse(String expression, boolean isConditional, boolean multiconditional, int linenumber) {
+		
+		expression = expression.trim();
+		
+		// In case the expression was multi-conditional
+		String[] expressions = expression.split("[&|^]");
+		
+		//if (multiconditional && expressions.length < 2) {
+		//	MainWindow.pushToLog("Error: multi-conditional check must have at least 2 conditions at line " + linenumber);
+		//	return false;
+		//}
+		if (!multiconditional && expressions.length > 1) {
+			MainWindow.pushToLog("Error: only one command is allowed after the asterisk at line " + linenumber);
+			return false;
+		}
+		
+		for (String exp : expressions) {
+			exp = exp.trim();
+			String command = exp.split(" ")[0];
+			if (pscript.commandExists(command)) 
+			{
+				Command c = pscript.findCommand(command);
+				String args = exp.substring(exp.indexOf(' '), exp.length()).trim();
+				if (!c.isConditional() && isConditional) {
+					MainWindow.pushToLog("Error: command '" + command + "' is not suitable for using in conditional response, at line " + linenumber);
+					return false;
+				}
+				if (!c.accepts(args)) {
+					MainWindow.pushToLog("Error: invalid argument '" + args + "' for " + command + " at line " + linenumber);			
+					if (c.hasExamples()) {
+						MainWindow.pushToLog("Valid example:");
+						for (String example : c.getExamples())
+							MainWindow.pushToLog(MainWindow.prefix_error + '|' + MainWindow.prefix_example + example);
+					}
+					return false;
+				}
+			} 
+			else {
+				MainWindow.pushToLog("Error: unknown command '" + command + "' at line " + linenumber);
+				return false;
+			}
+		}
+		
+		return true;
+	}
+	
 	
 	public List<Node> getTrees() {
 		return trees;

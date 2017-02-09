@@ -5,35 +5,35 @@ import java.util.regex.Pattern;
 public class Command {
 
 	List<Pattern> patterns;
-	boolean hasLabel;
+	private boolean isConditional;
 	private String commandName;
 	private String[] examples;
 	
-	public Command(String commandName, Pattern pattern, boolean hasgoto, String[] examples) {
+	public Command(String commandName, Pattern pattern, String[] examples) {
 		setName(commandName);
 		setExamples(examples);
-		this.hasLabel = hasgoto;
+		setConditionality(commandName);
 		patterns = new ArrayList<Pattern>();
 		patterns.add(pattern);
 	}
-	public Command(String commandName, List<Pattern> patterns, boolean hasgoto, String[] examples) {
+	public Command(String commandName, List<Pattern> patterns, String[] examples) {
 		setName(commandName);
 		setExamples(examples);
-		this.hasLabel = hasgoto;
+		setConditionality(commandName);
 		this.patterns = patterns;
 	}
-	public Command(String commandName, String[] patterns, boolean hasgoto, String[] examples) {
+	public Command(String commandName, String[] patterns, String[] examples) {
 		setName(commandName);
 		setExamples(examples);
-		this.hasLabel = hasgoto;
+		setConditionality(commandName);
 		this.patterns = new ArrayList<Pattern>();
 		for (String p: patterns)
 			this.patterns.add(Pattern.compile(p));
 	}
-	public Command(String commandName, String pattern, boolean hasgoto, String[] examples) {
+	public Command(String commandName, String pattern, String[] examples) {
 		setName(commandName);
 		setExamples(examples);
-		this.hasLabel = hasgoto;
+		setConditionality(commandName);
 		patterns = new ArrayList<Pattern>();
 		patterns.add(Pattern.compile(pattern));
 	}
@@ -59,8 +59,11 @@ public class Command {
 		this.commandName = commandName;
 	}
 	
-	public boolean hasLabel() {
-		return hasLabel;
+	public boolean isConditional() {
+		return isConditional;
+	}
+	private void setConditionality(String commandName) {
+		isConditional = commandName.endsWith("?");
 	}
 	
 	public String[] getExamples() {

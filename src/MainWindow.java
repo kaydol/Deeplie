@@ -21,6 +21,7 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
 import javax.swing.TransferHandler;
 import javax.swing.border.Border;
@@ -44,9 +45,11 @@ public class MainWindow extends JFrame {
 	public static String prefix_info = "";
 	public static String prefix_terminating = "";
 	
+	public static String ProgramName = "LoE .pscript Visualiser “Deeplie”";
+	
 	public MainWindow() {
 		
-		super("LoE .pscript Visualiser “Deeplie”");
+		super(ProgramName);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
 		filter = new FileNameExtensionFilter("pscript file (.pscript .txt)", "pscript", "txt");
@@ -64,18 +67,29 @@ public class MainWindow extends JFrame {
     	JPanel canvasHolder = new JPanel(new BorderLayout());
     	canvasHolder.add(canvas);
     	canvasHolder.setBorder(BorderFactory.createCompoundBorder(outer, inner));
+    	canvasHolder.setPreferredSize(new Dimension(400, 400));
     	
     	console = new JTextArea();
     	console.setRows(15);
+    	console.setLineWrap(true);
+    	console.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+    	console.setFont(new Font("Verdana", Font.PLAIN, 13));
     	JScrollPane consoleScrollpane = new JScrollPane(console);
-    	consoleScrollpane.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createEmptyBorder(0, 15, 15, 15), inner));
+    	//consoleScrollpane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+    	consoleScrollpane.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15), inner));
+    	consoleScrollpane.setPreferredSize(new Dimension(400, 200));
+    	
+    	
     	
     	//////////////////
     	//	Adding		//
     	//////////////////
     	
-    	background.add(canvasHolder, BorderLayout.CENTER);
-    	background.add(consoleScrollpane, BorderLayout.SOUTH);
+    	JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, canvasHolder, consoleScrollpane);
+    	background.add(splitPane, BorderLayout.CENTER);
+    	
+    	//background.add(canvasHolder, BorderLayout.CENTER);
+    	//background.add(consoleScrollpane, BorderLayout.EAST);
 		
     	add(background);
     	
@@ -86,7 +100,8 @@ public class MainWindow extends JFrame {
 			public int getSourceActions ( JComponent c ) { return TransferHandler.COPY; }
 			public boolean canImport ( TransferSupport support ) { return true; }
 			public boolean importData(JComponent comp, Transferable t) { 
-				try {
+				try 
+				{
 					@SuppressWarnings("unchecked")
 					List<File> files = (List<File>) t.getTransferData(DataFlavor.javaFileListFlavor);
 					if (files.size() > 0) {
@@ -102,7 +117,7 @@ public class MainWindow extends JFrame {
 						pushToLog("Info: when you drag&drop more than 1 files, only one is processed");
 					
 				} catch (UnsupportedFlavorException | IOException  e) {
-					// TODO Auto-generated catch block
+					pushToLog("Terminating: Make sure the file exists and uses UTF-8 encoding");
 					e.printStackTrace();
 				}
 				return true; 
@@ -113,7 +128,7 @@ public class MainWindow extends JFrame {
         
         setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("DeeplieConfused.png")));
         
-		setPreferredSize(new Dimension(800, 600));
+		setPreferredSize(new Dimension(850, 500));
 		pack();
 		setLocationRelativeTo(null);
 		setVisible(true);
@@ -126,6 +141,8 @@ public class MainWindow extends JFrame {
 		Parser parser = new Parser(filename);
 		canvas.setData(parser.getTrees(), parser.getPool());
 		canvas.repaintCanvas();
+		
+		Main.window.setTitle(ProgramName + " | " + LastLoadedFile.getName());
 	}
 	
 	public static void pushToLog(String msg) {
@@ -137,7 +154,7 @@ public class MainWindow extends JFrame {
 		if (msg.trim().startsWith("Info:"))
 			msg = prefix_info + msg;
 		if (msg.trim().startsWith("Valid"))
-			msg = prefix_example + msg;
+			msg = prefix_error + '|' + prefix_example + msg;
 		
 		log += msg + System.lineSeparator();
 		console.setText(log);
@@ -145,7 +162,7 @@ public class MainWindow extends JFrame {
 	
 	
 	public static JMenuBar createMenuBar() {
-		Font font = new Font("Verdana", Font.PLAIN, 11);
+		Font font = new Font("Verdana", Font.PLAIN, 12);
 
         JMenuBar menuBar = new JMenuBar();
          
