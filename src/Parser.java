@@ -38,9 +38,9 @@ public class Parser {
 		List<String> npc_names = new ArrayList<String>();
 		
 		Pattern ValidSpeechName = Pattern.compile("^([\\w\\s]+)( \\(\\w+\\))?"); // Name (emotion):
-		Pattern ValidSpeechText = Pattern.compile("[\\w\\s;,\\.!\\?\\$’'\"-“”]+"); // NO ':' allowed!
-		Pattern ValidCommand = Pattern.compile("[\\w\\?\\s:<>=-]+"); // command <args> :Label
-		Pattern ValidCondition = Pattern.compile("[\\w\\?\\s:<>=-\\|^&]+");
+		Pattern ValidSpeechText = Pattern.compile("[\\w\\s;,\\.!\\?\\$’'\"\\-“”]+"); // NO ':' allowed!
+		Pattern ValidCommand = Pattern.compile("[\\w\\?\\s:<>=\\-]+"); // command <args> :Label
+		Pattern ValidCondition = Pattern.compile("[\\w\\?\\s:<>=\\-\\|^&]+");
 		Pattern ValidLabel = Pattern.compile("^\\[\\w+\\]");
 		
 		for (int i = 0; i < text.size(); ++i) {
