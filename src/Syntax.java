@@ -4,7 +4,7 @@ import java.util.List;
 public class Syntax {
 
 	List<Command> commands;
-	private String QuestID_pattern = "\\w+"; 
+	public static String QuestID_pattern = "\\w+"; 
 	
 	public Syntax() {
 		

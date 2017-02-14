@@ -40,14 +40,15 @@ public class AdvancedWindow extends JFrame {
 		
 		//Border inner = BorderFactory.createLineBorder(Color.GRAY);
     	Border outer = BorderFactory.createEmptyBorder(15, 15, 15, 15);
-		JPanel background = new JPanel(new GridLayout(7,1));
+		JPanel background = new JPanel(new GridLayout(9,1));
 		background.setBorder(outer);
 		
 		JCheckBox box_doubleSpace = new JCheckBox("Put 2 spaces after the end of each sentence and 1 after commas");
 		JCheckBox box_asteriskSpace = new JCheckBox("Add 1 space after each asterisk");
 		JCheckBox box_speechSpace = new JCheckBox("Add a space before Speech in NPCNAME:Speech");
-		JCheckBox box_replySpace = new JCheckBox("Add a space after each > symbol");
+		JCheckBox box_replySpace = new JCheckBox("Add a space after each > symbol in Responses");
 		JCheckBox box_capitalize = new JCheckBox("Captialize $PLAYERNAME and every END in labels and gotos");
+		JCheckBox box_quotes = new JCheckBox("Replace every ' with ’");
 		
 		Font font = new Font("Verdana", Font.PLAIN, 11);
 		box_doubleSpace.setFont(font);
@@ -55,6 +56,7 @@ public class AdvancedWindow extends JFrame {
 		box_speechSpace.setFont(font);
 		box_replySpace.setFont(font);
 		box_capitalize.setFont(font);
+		box_quotes.setFont(font);
 		
 		JButton commitButton = new JButton("Rewrite the file");
 		commitButton.addActionListener(new ActionListener() {           
@@ -75,7 +77,7 @@ public class AdvancedWindow extends JFrame {
             			continue;
             		
             		if (box_doubleSpace.isSelected() && s.charAt(0) != '*') {
-            			s = s.replaceAll("([!?.])\\s([^\\s\\.])", "$1  $2");
+            			s = s.replaceAll("([!?.])([^\\s\\.])", "$1  $2");
             			s = s.replaceAll(",([^\\s])", ",  $1");
             		}
             		if (box_asteriskSpace.isSelected())
@@ -88,6 +90,8 @@ public class AdvancedWindow extends JFrame {
             			s = s.replaceAll("(?<=goto )[Ee][Nn][Dd]|(?<=:)[Ee][Nn][Dd]", "END");
             			s = s.replaceAll("\\$[Pp][Ll][Aa][Yy][Ee][Rr][Nn][Aa][Mm][Ee]", "\\$PLAYERNAME");
             		}
+            		if (box_quotes.isSelected())
+            			s = s.replaceAll("'", "’");
             		text.set(i, s);
             	}
             	
@@ -107,11 +111,13 @@ public class AdvancedWindow extends JFrame {
             }           
         });
 		
+		background.add(new JLabel("Advanced editing"));
 		background.add(box_doubleSpace);
 		background.add(box_asteriskSpace);
 		background.add(box_speechSpace);
 		background.add(box_replySpace);
 		background.add(box_capitalize);
+		background.add(box_quotes);
 		background.add(new JLabel(""));
 		
 		

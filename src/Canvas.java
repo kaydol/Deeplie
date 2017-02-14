@@ -54,7 +54,6 @@ public class Canvas extends JPanel {
         Graphics2D g = (Graphics2D) savedImage.getGraphics();
         g.setColor(Color.WHITE);
         g.fillRect(0, 0, savedImage.getWidth(), savedImage.getHeight());
-        // TODO change 300\300 to sizeX()/2 sizeY()/2
         drawTrees(g);
     }
 	
@@ -204,8 +203,8 @@ public class Canvas extends JPanel {
 				}
 				if (e.getButton() == MouseEvent.BUTTON3) {
 					draggingRMB = false;
-					shX += mouseLastPoint.x - e.getPoint().x;
-					shY += mouseLastPoint.y - e.getPoint().y;
+					shX += (mouseLastPoint.x - e.getPoint().x) * (1 / scale);
+					shY += (mouseLastPoint.y - e.getPoint().y) * (1 / scale);
 					Main.window.setCursor(Cursor.getDefaultCursor());				
 				}
 			}
@@ -224,8 +223,8 @@ public class Canvas extends JPanel {
 					repaintCanvas();
 				}
 				if (draggingRMB) {
-					shiftX = shX + mouseLastPoint.x - e.getPoint().x;
-					shiftY = shY + mouseLastPoint.y - e.getPoint().y;
+					shiftX = (int) Math.round(shX + (mouseLastPoint.x - e.getPoint().x) * (1 / scale));
+					shiftY = (int) Math.round(shY + (mouseLastPoint.y - e.getPoint().y) * (1 / scale));
 					repaintCanvas();
 				}
 			}
@@ -239,8 +238,9 @@ public class Canvas extends JPanel {
 					scale += 0.2 * scale;
 				else
 					scale -= 0.2 * scale;
+				shiftX = (int) Math.round(shX + (1 / scale));
+				shiftY = (int) Math.round(shY + (1 / scale));
 				repaintCanvas();
-				
 			}
 		});
     	

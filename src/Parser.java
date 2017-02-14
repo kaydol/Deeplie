@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -16,18 +18,42 @@ public class Parser {
 	private List<Node> pool;
 	private Syntax pscript;
 	
+	private HashSet<String> Activated_QuestIDs;
+	private HashSet<String> Completed_QuestIDs;
+	private HashSet<String> Activated_Objectives;
+	private HashSet<String> Completed_Objectives;
+	private LinkedHashSet<Integer> Quest_Stages;
+	private LinkedHashSet<String> Quest_IDs;
+	
 	public Parser(String filename) throws IOException {
 		pscript = new Syntax();
+		Activated_QuestIDs = new HashSet<String>();
+		Completed_QuestIDs = new HashSet<String>();
+		Activated_Objectives = new HashSet<String>();
+		Completed_Objectives = new HashSet<String>();
+		Quest_Stages = new LinkedHashSet<Integer>();
+		Quest_IDs = new LinkedHashSet<String>();
+		
 		readFile(filename);
 		performAnalysis();
 		buildTree();
 	}
 	
 	public void readFile(String filename) throws IOException {
-		File file = new File(filename);
+		
+		File file = new File(filename);	
 		if (!file.exists())
 			MainWindow.pushToLog("Error: no such file in directory '" + filename + "'");
+		
 		text = Files.readAllLines(file.toPath(), Charset.forName("UTF-8"));
+		
+		Activated_QuestIDs.clear();
+		Completed_QuestIDs.clear();
+		Activated_Objectives.clear();
+		Completed_Objectives.clear();
+		Quest_Stages.clear();
+		Quest_IDs.clear();
+		
 		MainWindow.pushToLog("Info: finished reading file, " + text.size() + " lines total");
 	}
 	
@@ -35,10 +61,10 @@ public class Parser {
 		String str;
 		Matcher m;
 
-		List<String> npc_names = new ArrayList<String>();
+		HashSet<String> npc_names = new HashSet<String>();
 		
 		Pattern ValidSpeechName = Pattern.compile("^([\\w\\s]+)( \\(\\w+\\))?"); // Name (emotion):
-		Pattern ValidSpeechText = Pattern.compile("[\\w\\s;,\\.!\\?\\$’'\"\\-“”]+"); // NO ':' allowed!
+		Pattern ValidSpeechText = Pattern.compile("[\\w\\s;,\\.!\\?\\$'\"\\-“”‘’&%]+"); // NO ':' allowed!
 		Pattern ValidCommand = Pattern.compile("[\\w\\?\\s:<>=\\-]+"); // command <args> :Label
 		Pattern ValidCondition = Pattern.compile("[\\w\\?\\s:<>=\\-\\|^&]+");
 		Pattern ValidLabel = Pattern.compile("^\\[\\w+\\]");
@@ -92,6 +118,19 @@ public class Parser {
 			if (m.find()) {
 				if (!str.matches(".*:\\w+$")) {
 					MainWindow.pushToLog("Error: missing label at line " + (i+1));
+					continue;
+				}
+			}
+			
+			// Invalid symbols in Responses, applies the same rules as for NPC Speech
+			if (str.startsWith(">")) {
+				int beginIndex = str.lastIndexOf('|') + 1;
+				if (beginIndex == 0)
+					++beginIndex;
+				int endIndex = str.lastIndexOf(':');
+				if (!str.substring(beginIndex, endIndex).matches(ValidSpeechText.pattern())) {
+					System.out.println(str.substring(beginIndex, endIndex));
+					MainWindow.pushToLog("Error: inappropriate symbol(s) in Response at line " + (i+1));
 					continue;
 				}
 			}
@@ -202,7 +241,8 @@ public class Parser {
 			m = (Pattern.compile("^[^?*>].+(?=:)")).matcher(str);
 			if (m.find()) {
 				String npc_name = m.group().trim();
-				String emotion = "";
+				String emotion = ""; 
+				// TODO use this variable
 				
 				if (npc_name.matches(ValidSpeechName.pattern())) {
 					m = (Pattern.compile("^([\\w\\s]+)( \\(\\w+\\))?")).matcher(npc_name);
@@ -213,7 +253,7 @@ public class Parser {
 							emotion = m.group(2).trim();
 						if (!npc_names.contains(npc_name)) {
 							MainWindow.pushToLog("Error: if '" + npc_name + "' is an NPC name, it should be mentioned by aliasname command, at line " + (i+1));
-							continue;
+							//continue;
 						}
 					}	
 				} else {
@@ -264,17 +304,51 @@ public class Parser {
 						MainWindow.pushToLog("Error: inappropriate symbol(s) at line " + (i+1));
 				}
 			}
-			
-			
 		}
 		
+
+		for (String task: Activated_Objectives) {
+			if (!Completed_Objectives.contains(task)) 
+				MainWindow.pushToLog("Error: objective '" + task + "' was activated, but never was completed\\cancelled");			
+		}
+		for (String task: Completed_Objectives) {
+			if (!Activated_Objectives.contains(task)) 
+				MainWindow.pushToLog("Error: objective '" + task + "' was completed\\cancelled, but never was activated");			
+		}
+		for (String quest: Activated_QuestIDs) {
+			if (!Completed_QuestIDs.contains(quest)) 
+				MainWindow.pushToLog("Error: quest '" + quest + "' was activated, but was never completed");			
+		}
+		for (String quest: Completed_QuestIDs) {
+			if (!Activated_QuestIDs.contains(quest)) 
+				MainWindow.pushToLog("Error: quest '" + quest + "' was completed, but was never activated");			
+		}
+		
+		String temp = "";
+		for (String s: Quest_IDs)
+			temp += s + ", ";
+		MainWindow.pushToLog("Info: mentioned QuestIDs = " + temp.substring(0, temp.length() - 2));
+		
+		// TODO make a more comfortable way to show this information + change Activated_Objectives to LinkedHashSet to save the order of tasks
+		//temp = "";
+		//for (String s: Activated_Objectives)
+		//	temp += s + ", ";
+		//MainWindow.pushToLog("Info: mentioned Objectives = " + temp.substring(0, temp.length() - 2));
+		
+		temp = "";
+		for (int k: Quest_Stages)
+			temp += k + ", ";
+		MainWindow.pushToLog("Info: stages set by queststage command = " +  temp.substring(0, temp.length() - 2));
+		
+				
 	}
 	
 	private void buildTree() {
 		
 		// Gathering all nodes in one pool
 		String label = null;
-		List<String> usedLabels = new ArrayList<String>();
+		HashSet<String> usedLabels = new HashSet<String>();
+		
 		List<String> content = new ArrayList<String>();
 		trees = new ArrayList<Node>();
 		pool = new ArrayList<Node>();
@@ -349,7 +423,7 @@ public class Parser {
 			boolean found_reliable_exit_point = false;
 			for(int i = node.getContent().size() - 1; i > 0; --i) {
 				String line = node.getContent().get(i).trim();
-				if (line.isEmpty() || line.charAt(0) == '#') 
+				if (line.isEmpty() || line.startsWith("#")) 
 					continue;
 				// seeking for either goto or reliable dialogue answer that will 100% lead us out of the current node
 				// dialogue answer must not contain conditional expression in order to be `reliable`, hehe
@@ -368,18 +442,31 @@ public class Parser {
 			
 			
 			// Searching for areas with unreachable code in the current node, i.e. code after 'goto' command, or code after answer options
-			boolean unreachable_code = false;
+			boolean found_something = false;
+			boolean found_goto_jump = false;
 			for(int i = 0; i < node.getContent().size(); ++i) {
 				String line = node.getContent().get(i).trim();
-				if (line.isEmpty() || line.charAt(0) == '#') 
+				if (line.isEmpty() || line.startsWith("#")) 
 					continue;
-				if (line.matches("^\\* goto \\w+|^>.+")) 
+				if (line.matches("^(\\* goto \\w+)|^>.+")) 
 				{
-					unreachable_code = true;
+					// No code will be executed after 'goto' jump
+					if (found_goto_jump) {
+						int unreachable_starts_at = text.indexOf(line) + 1;
+						MainWindow.pushToLog("Error: the code at line " + unreachable_starts_at + " and below will never be executed");
+						break;
+					}
+					if (line.startsWith("*"))
+						found_goto_jump = true;
+					
+					// But if we met a response, we still should be able to read 
+					// other responses and don't give an error while reading them
+					found_something = true;
 				}
 				else 
 				{
-					if (unreachable_code) {
+					// We get here once we found a line that was neither a response nor goto command
+					if (found_something) {
 						int unreachable_starts_at = text.indexOf(line) + 1;
 						MainWindow.pushToLog("Error: the code at line " + unreachable_starts_at + " and below will never be executed");
 						break;
@@ -436,6 +523,36 @@ public class Parser {
 							MainWindow.pushToLog(MainWindow.prefix_error + '|' + MainWindow.prefix_example + example);
 					}
 					return false;
+				}
+				
+				// For checking if objectives and quests were completed or not
+				Matcher m = (Pattern.compile("\\w+\\?? <?(" + Syntax.QuestID_pattern + ")>?(.*)")).matcher(expression);
+				if (m.find()) {
+					
+					String FirstArgument = m.group(1); 	// usually QuestID, but not for all commands. Doesn't work for argument of hasitem, i.e. <x:y>
+					String SecondArgument = ""; 		// can be TaskID or something else
+					if (m.group(2) != null) {
+						SecondArgument = m.group(2).trim();
+					} 
+					
+					switch (c.getName()) {
+						case "activateobjective": Activated_Objectives.add(SecondArgument); Quest_IDs.add(FirstArgument); break;
+						case "completeobjective": Completed_Objectives.add(SecondArgument); Quest_IDs.add(FirstArgument); break;
+						case "cancelobjective": Completed_Objectives.add(SecondArgument); Quest_IDs.add(FirstArgument); break;
+						case "activatequest": Activated_QuestIDs.add(FirstArgument); Quest_IDs.add(FirstArgument); break;
+						case "completequest": Completed_QuestIDs.add(FirstArgument); Quest_IDs.add(FirstArgument); break;
+						case "queststage": 
+							int stage = Integer.parseInt(SecondArgument);
+							if (stage > 9000)
+								Completed_QuestIDs.add(FirstArgument);
+							Quest_Stages.add(stage);
+							Quest_IDs.add(FirstArgument);
+						break;
+						case "queststage?": Quest_IDs.add(FirstArgument); break;
+						case "objectivecomplete?": Quest_IDs.add(FirstArgument); break;
+						case "questactive?": Quest_IDs.add(FirstArgument); break;
+						case "activateKillObjective": Quest_IDs.add(FirstArgument); break;
+					}
 				}
 			} 
 			else {

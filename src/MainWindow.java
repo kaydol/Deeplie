@@ -72,13 +72,13 @@ public class MainWindow extends JFrame {
     	console = new JTextArea();
     	console.setRows(15);
     	console.setLineWrap(true);
+    	console.setWrapStyleWord(true);
     	console.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
     	console.setFont(new Font("Verdana", Font.PLAIN, 13));
     	JScrollPane consoleScrollpane = new JScrollPane(console);
     	//consoleScrollpane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
     	consoleScrollpane.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15), inner));
     	consoleScrollpane.setPreferredSize(new Dimension(400, 200));
-    	
     	
     	
     	//////////////////
