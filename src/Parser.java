@@ -25,6 +25,8 @@ public class Parser {
 	private LinkedHashSet<Integer> Quest_Stages;
 	private LinkedHashSet<String> Quest_IDs;
 	
+	private Pattern ValidSpeechName, ValidSpeechText, ValidCommand, ValidCondition, ValidLabel;
+	
 	public Parser(String filename) throws IOException {
 		pscript = new Syntax();
 		Activated_QuestIDs = new HashSet<String>();
@@ -33,6 +35,12 @@ public class Parser {
 		Completed_Objectives = new HashSet<String>();
 		Quest_Stages = new LinkedHashSet<Integer>();
 		Quest_IDs = new LinkedHashSet<String>();
+		
+		ValidSpeechName = Pattern.compile("^([\\w\\s]+)( \\(\\w+\\))?"); // Name (emotion)
+		ValidSpeechText = Pattern.compile("[\\w\\s;,\\.!\\?\\$'\"\\-“”‘’&%…]+"); // NO ':' allowed!
+		ValidCommand = Pattern.compile("[\\w\\?\\s:<>=\\-\\[\\]\\.]+"); // \w ? \s : <>=- [] .
+		ValidCondition = Pattern.compile("[\\w\\?\\s:<>=\\-\\|^&]+");
+		ValidLabel = Pattern.compile("^\\[\\w+\\]");
 		
 		readFile(filename);
 		performAnalysis();
@@ -62,32 +70,38 @@ public class Parser {
 		Matcher m;
 
 		HashSet<String> npc_names = new HashSet<String>();
+
+		// This message repeats a lot, so I put in a variable
+		String errInappropriateSymbol = "Error: inappropriate symbol(s) at line ";
 		
-		Pattern ValidSpeechName = Pattern.compile("^([\\w\\s]+)( \\(\\w+\\))?"); // Name (emotion):
-		Pattern ValidSpeechText = Pattern.compile("[\\w\\s;,\\.!\\?\\$'\"\\-“”‘’&%]+"); // NO ':' allowed!
-		Pattern ValidCommand = Pattern.compile("[\\w\\?\\s:<>=\\-]+"); // command <args> :Label
-		Pattern ValidCondition = Pattern.compile("[\\w\\?\\s:<>=\\-\\|^&]+");
-		Pattern ValidLabel = Pattern.compile("^\\[\\w+\\]");
-		
+
 		for (int i = 0; i < text.size(); ++i) {
 			str = text.get(i).trim();
+			
+			// Saving the current label to allow aliasname only before the first label
+			String currentLabel = "";
+			if (str.matches(ValidLabel.pattern()))
+				currentLabel = str;
 			
 			if (str.isEmpty() || str.startsWith("#"))
 				continue;
 			
 			if (str.startsWith("*") && !str.matches("\\*" + ValidCommand.pattern())) {
-				MainWindow.pushToLog("Error: inappropriate symbol(s) at line " + (i+1));
+				MainWindow.pushToLog(errInappropriateSymbol + (i+1));
 				continue;
 			}
 			if (str.startsWith("?") && !str.matches("\\?" + ValidCondition.pattern())) {
-				MainWindow.pushToLog("Error: inappropriate symbol(s) at line " + (i+1));
+				MainWindow.pushToLog(errInappropriateSymbol + (i+1));
 				continue;
 			}
+			
 			
 			m = (Pattern.compile("\\* aliasname <([\\w]+)> <([\\w\\s]+)>")).matcher(str);
 			if (m.find()) { 
 				npc_names.add(m.group(1));
 				npc_names.add(m.group(2));
+				if (!currentLabel.isEmpty())
+					MainWindow.pushToLog("Error: having 'aliasname' in the middle of the script, at line " + (i+1));
 				continue;
 			}
 			
@@ -107,7 +121,7 @@ public class Parser {
 			}
 			
 			// ">Text" instead of "> Text"
-			m = (Pattern.compile("^>[^\\s]")).matcher(str);
+			m = (Pattern.compile("^\\s*>[^\\s]")).matcher(str);
 			if (m.find()) { 
 				MainWindow.pushToLog("Error: > should be followed by space at line " + (i+1));
 				continue;
@@ -152,7 +166,7 @@ public class Parser {
 			// Missed pipe in Optional Responses
 			m = (Pattern.compile("\\|(.*\\|)?")).matcher(str);
 			if (m.find() && str.startsWith(">") && m.group(1) == null) {
-				MainWindow.pushToLog("Error: the second pipe symbol was missed in the optional response at line " + (i+1));
+				MainWindow.pushToLog("Error: the second pipe symbol was missed in the Optional Response at line " + (i+1));
 				continue;
 			}
 			
@@ -212,12 +226,19 @@ public class Parser {
 			}
 			
 
-			// uncapitalized END in goto and :Labels
+			// uncapitalized BEGINNING and END in goto and :Labels
 			m = (Pattern.compile("(?<=goto )[Ee][Nn][Dd]|(?<=:)[Ee][Nn][Dd]")).matcher(str);
 			if (m.find() && !m.group().equals("END")) {
 				MainWindow.pushToLog("Error: uncapitalized END at line " + (i+1));
 				continue;
 			}
+			m = (Pattern.compile("(?<=goto )[Bb][Ee][Gg][Ii][Nn][Nn][Ii][Nn][Gg]|(?<=:)[Bb][Ee][Gg][Ii][Nn][Nn][Ii][Nn][Gg]")).matcher(str);
+			if (m.find() && !m.group().equals("BEGINNING")) {
+				MainWindow.pushToLog("Error: uncapitalized BEGINNING at line " + (i+1));
+				continue;
+			}
+			
+			
 			// wrong capitalization in variables
 			m = (Pattern.compile("\\$[Pp][Ll][Aa][Yy][Ee][Rr][Nn][Aa][Mm][Ee]")).matcher(str);
 			if (m.find() && !m.group().equals("$PLAYERNAME")) {
@@ -252,7 +273,7 @@ public class Parser {
 						if (m.group(2) != null)
 							emotion = m.group(2).trim();
 						if (!npc_names.contains(npc_name)) {
-							MainWindow.pushToLog("Error: if '" + npc_name + "' is an NPC name, it should be mentioned by aliasname command, at line " + (i+1));
+							MainWindow.pushToLog("Error: if '" + npc_name + "' is an NPC name, it's good to mention it by aliasname command, at line " + (i+1));
 							//continue;
 						}
 					}	
@@ -267,7 +288,7 @@ public class Parser {
 			if (line_contains_npc_name) {
 				m = (Pattern.compile("(?<=:).+")).matcher(str);
 				if (m.find() && !m.group().matches(ValidSpeechText.pattern())) {
-					MainWindow.pushToLog("Error: inappropriate symbol(s) at line " + (i+1));
+					MainWindow.pushToLog(errInappropriateSymbol + (i+1));
 					continue;
 				}
 			}
@@ -301,7 +322,7 @@ public class Parser {
 					if (pscript.commandExists(m.group()))
 						MainWindow.pushToLog("Error: perhaps an asterisk was missed at line " + (i+1));
 					else
-						MainWindow.pushToLog("Error: inappropriate symbol(s) at line " + (i+1));
+						MainWindow.pushToLog(errInappropriateSymbol + (i+1));
 				}
 			}
 		}
@@ -327,6 +348,8 @@ public class Parser {
 		String temp = "";
 		for (String s: Quest_IDs)
 			temp += s + ", ";
+		if (temp.length() == 0)
+			temp = "<No QuestIDs found>  ";
 		MainWindow.pushToLog("Info: mentioned QuestIDs = " + temp.substring(0, temp.length() - 2));
 		
 		// TODO make a more comfortable way to show this information + change Activated_Objectives to LinkedHashSet to save the order of tasks
@@ -338,6 +361,8 @@ public class Parser {
 		temp = "";
 		for (int k: Quest_Stages)
 			temp += k + ", ";
+		if (temp.length() == 0)
+			temp = "<Command queststage wasn't used>  ";
 		MainWindow.pushToLog("Info: stages set by queststage command = " +  temp.substring(0, temp.length() - 2));
 		
 				
@@ -357,7 +382,7 @@ public class Parser {
 		for (String p: text) {
 			++currentline;
 			p = p.trim();
-			if (p.matches("^\\[\\w+\\]") || currentline == text.size()) {
+			if (p.matches(ValidLabel.pattern()) || currentline == text.size()) {
 				// reached another node
 				if (label != null) {
 					usedLabels.add(label);
@@ -408,7 +433,8 @@ public class Parser {
 						int lineNumber = text.indexOf(s) + 1; 
 						// sometimes lineNumber can glitch and be zero; 
 						// this happens when Java fails to find that line in the 'text' array, and indexOf returns -1
-						if (!label.equals("END"))
+						// Java fails because we search for a trimmed version, and text contains untrimmed strings
+						if (!(label.equals("END") || label.equals("BEGINNING")))
 							MainWindow.pushToLog("Error: no such label ':" + label + "' at line " + lineNumber);
 					} else {
 						if (!node.getChildren().contains(child)) {
@@ -488,7 +514,7 @@ public class Parser {
 		
 	}
 	
-	private boolean parse(String expression, boolean isConditional, boolean multiconditional, int linenumber) {
+	private boolean parse(String expression, boolean isConditional, boolean isMultiConditional, int linenumber) {
 		
 		expression = expression.trim();
 		
@@ -499,7 +525,7 @@ public class Parser {
 		//	MainWindow.pushToLog("Error: multi-conditional check must have at least 2 conditions at line " + linenumber);
 		//	return false;
 		//}
-		if (!multiconditional && expressions.length > 1) {
+		if (!isMultiConditional && expressions.length > 1) {
 			MainWindow.pushToLog("Error: only one command is allowed after the asterisk at line " + linenumber);
 			return false;
 		}

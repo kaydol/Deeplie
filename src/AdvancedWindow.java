@@ -40,15 +40,17 @@ public class AdvancedWindow extends JFrame {
 		
 		//Border inner = BorderFactory.createLineBorder(Color.GRAY);
     	Border outer = BorderFactory.createEmptyBorder(15, 15, 15, 15);
-		JPanel background = new JPanel(new GridLayout(9,1));
+		JPanel background = new JPanel(new GridLayout(11,1));
 		background.setBorder(outer);
 		
 		JCheckBox box_doubleSpace = new JCheckBox("Put 2 spaces after the end of each sentence and 1 after commas");
 		JCheckBox box_asteriskSpace = new JCheckBox("Add 1 space after each asterisk");
 		JCheckBox box_speechSpace = new JCheckBox("Add a space before Speech in NPCNAME:Speech");
 		JCheckBox box_replySpace = new JCheckBox("Add a space after each > symbol in Responses");
-		JCheckBox box_capitalize = new JCheckBox("Captialize $PLAYERNAME and every END in labels and gotos");
+		JCheckBox box_capitalize = new JCheckBox("Captialize $PLAYERNAME and BEGINNING\\END in labels and gotos");
 		JCheckBox box_quotes = new JCheckBox("Replace every ' with ’");
+		JCheckBox box_dots1 = new JCheckBox("Replace every 3 dots (...) with 1 symbol (…)");
+		JCheckBox box_dots2 = new JCheckBox("Replace every (…) with 3 dots (...)");
 		
 		Font font = new Font("Verdana", Font.PLAIN, 11);
 		box_doubleSpace.setFont(font);
@@ -57,6 +59,9 @@ public class AdvancedWindow extends JFrame {
 		box_replySpace.setFont(font);
 		box_capitalize.setFont(font);
 		box_quotes.setFont(font);
+		box_dots1.setFont(font);
+		box_dots2.setFont(font);
+		
 		
 		JButton commitButton = new JButton("Rewrite the file");
 		commitButton.addActionListener(new ActionListener() {           
@@ -87,11 +92,17 @@ public class AdvancedWindow extends JFrame {
             		if (box_replySpace.isSelected())
             			s = s.replaceAll("^>([^\\s])", "> $1");
             		if (box_capitalize.isSelected()) {
+            			s = s.replaceAll("(?<=goto )[Bb][Ee][Gg][Ii][Nn][Nn][Ii][Nn][Gg]|(?<=:)[Bb][Ee][Gg][Ii][Nn][Nn][Ii][Nn][Gg]", "BEGINNING");
             			s = s.replaceAll("(?<=goto )[Ee][Nn][Dd]|(?<=:)[Ee][Nn][Dd]", "END");
             			s = s.replaceAll("\\$[Pp][Ll][Aa][Yy][Ee][Rr][Nn][Aa][Mm][Ee]", "\\$PLAYERNAME");
             		}
             		if (box_quotes.isSelected())
             			s = s.replaceAll("'", "’");
+            		if (box_dots1.isSelected())
+            			s = s.replaceAll("\\.\\.\\.", "…");
+            		if (box_dots2.isSelected())
+            			s = s.replaceAll("…", "...");
+            		
             		text.set(i, s);
             	}
             	
@@ -118,6 +129,8 @@ public class AdvancedWindow extends JFrame {
 		background.add(box_replySpace);
 		background.add(box_capitalize);
 		background.add(box_quotes);
+		background.add(box_dots1);
+		background.add(box_dots2);
 		background.add(new JLabel(""));
 		
 		
@@ -130,7 +143,7 @@ public class AdvancedWindow extends JFrame {
 		add(background);
 		
 		setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("DeeplieConfused.png")));
-		setPreferredSize(new Dimension(450, 280));
+		setPreferredSize(new Dimension(450, 360));
 		pack();
 		setLocationRelativeTo(Main.window);
 		

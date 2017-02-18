@@ -37,7 +37,7 @@ public class Syntax {
 		commands.add(new Command("giveSkill", "\\d+ \\d+", new String[] {"* giveSkill SkillID LevelOfSkill", "* giveSkill 2 0"}));
 		commands.add(new Command("aliasname", "<\\w+> <[\\w\\s]+>", new String[] {"* aliasname <ShortName> <Long Name>","* aliasname <Chaser> <Snuggle Chaser>", "* aliasname <SC> <Snuggle Chaser>", "* aliasname <Snug> <Snuggle Chaser>"}));
 		
-		commands.add(new Command("runscript", "(\\.\\.\\/)?(\\w+\\/)*([\\w\\s]+\\.pscript)", null));
+		commands.add(new Command("runscript", "(\\.\\.\\/)?(\\w+\\/)*(" + QuestID_pattern + "\\.pscript)( goto \\[\\w+\\])?", new String[] {"* runscript QuestID.pscript", "* runscript ../CK_Library/QuestID.pscript", "* runscript ../QuestID.pscript goto [Label]"}));
 		commands.add(new Command("activateKillObjective", "<" + QuestID_pattern + "> <[\\w\\s]+> <\\w+> <\\w+> <\\d+> <\\w+>", null));
 		
 		commands.add(new Command("israce?", new String[] {"<Pegasus>", "<Unicorn>", "<Earth>"}, new String[] {"* israce? <[Pegasus|Unicorn|Earth]> :LabelName"}));
