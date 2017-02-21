@@ -24,6 +24,7 @@ public class Parser {
 	private HashSet<String> Completed_Objectives;
 	private LinkedHashSet<Integer> Quest_Stages;
 	private LinkedHashSet<String> Quest_IDs;
+	private LinkedHashSet<String> MentionedNPCs;
 	
 	private Pattern ValidSpeechName, ValidSpeechText, ValidCommand, ValidCondition, ValidLabel;
 	
@@ -35,10 +36,11 @@ public class Parser {
 		Completed_Objectives = new HashSet<String>();
 		Quest_Stages = new LinkedHashSet<Integer>();
 		Quest_IDs = new LinkedHashSet<String>();
+		MentionedNPCs = new LinkedHashSet<String>();
 		
 		ValidSpeechName = Pattern.compile("^([\\w\\s]+)( \\(\\w+\\))?"); // Name (emotion)
 		ValidSpeechText = Pattern.compile("[\\w\\s;,\\.!\\?\\$'\"\\-“”‘’&%…]+"); // NO ':' allowed!
-		ValidCommand = Pattern.compile("[\\w\\?\\s:<>=\\-\\[\\]\\.]+"); // \w ? \s : <>=- [] .
+		ValidCommand = Pattern.compile("[\\w\\?\\s:<>=\\-]+"); // \w ? \s : <>=- 
 		ValidCondition = Pattern.compile("[\\w\\?\\s:<>=\\-\\|^&]+");
 		ValidLabel = Pattern.compile("^\\[\\w+\\]");
 		
@@ -87,8 +89,16 @@ public class Parser {
 				continue;
 			
 			if (str.startsWith("*") && !str.matches("\\*" + ValidCommand.pattern())) {
-				MainWindow.pushToLog(errInappropriateSymbol + (i+1));
-				continue;
+				
+				if (str.matches("\\* runscript .+") || str.matches("\\* f .+") || str.matches("\\* playsound .+")) {
+					// These commands may have some very rare symbols in their arguments, and I don't want to 
+					// add those very specific symbols into a common whitelist used by all other commands
+					// Instead, those symbols will be treated by the regular expression of those commands 
+				}
+				else {
+					MainWindow.pushToLog(errInappropriateSymbol + (i+1));
+					continue;
+				}
 			}
 			if (str.startsWith("?") && !str.matches("\\?" + ValidCondition.pattern())) {
 				MainWindow.pushToLog(errInappropriateSymbol + (i+1));
@@ -143,7 +153,6 @@ public class Parser {
 					++beginIndex;
 				int endIndex = str.lastIndexOf(':');
 				if (!str.substring(beginIndex, endIndex).matches(ValidSpeechText.pattern())) {
-					System.out.println(str.substring(beginIndex, endIndex));
 					MainWindow.pushToLog("Error: inappropriate symbol(s) in Response at line " + (i+1));
 					continue;
 				}
@@ -273,8 +282,12 @@ public class Parser {
 						if (m.group(2) != null)
 							emotion = m.group(2).trim();
 						if (!npc_names.contains(npc_name)) {
-							MainWindow.pushToLog("Error: if '" + npc_name + "' is an NPC name, it's good to mention it by aliasname command, at line " + (i+1));
-							//continue;
+							if (!MentionedNPCs.contains(npc_name)) {
+								MainWindow.pushToLog("Info: new NPC found '" + npc_name + "', first appearance at line " + (i+1));
+								MentionedNPCs.add(npc_name);
+							} else {
+								// This NPC wasn't mentioned by aliasname, but we already reported this name
+							}
 						}
 					}	
 				} else {
