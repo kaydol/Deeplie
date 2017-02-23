@@ -23,6 +23,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
+import javax.swing.KeyStroke;
 import javax.swing.TransferHandler;
 import javax.swing.border.Border;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -47,6 +48,9 @@ public class MainWindow extends JFrame {
 	
 	public static String ProgramName = "LoE .pscript Visualiser “Deeplie”";
 	
+	/**
+	 * 
+	 */
 	public MainWindow() {
 		
 		super(ProgramName);
@@ -75,6 +79,7 @@ public class MainWindow extends JFrame {
     	console.setWrapStyleWord(true);
     	console.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
     	console.setFont(new Font("Verdana", Font.PLAIN, 13));
+    	console.setEditable(false);
     	JScrollPane consoleScrollpane = new JScrollPane(console);
     	//consoleScrollpane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
     	consoleScrollpane.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15), inner));
@@ -123,9 +128,8 @@ public class MainWindow extends JFrame {
 				return true; 
 			}
     	});
-        setJMenuBar(createMenuBar());
     	
-        
+        setJMenuBar(createMenuBar());
         setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("DeeplieConfused.png")));
         
 		setPreferredSize(new Dimension(850, 500));
@@ -169,7 +173,7 @@ public class MainWindow extends JFrame {
         JMenu fileMenu = new JMenu("File");
         fileMenu.setFont(font);
         
-        JMenuItem item_loadFile = new JMenuItem("Load .pscript file");
+        JMenuItem item_loadFile = new JMenuItem("Load .pscript file ");
         item_loadFile.setFont(font);
         fileMenu.add(item_loadFile);
         item_loadFile.addActionListener(new ActionListener() {           
@@ -193,7 +197,9 @@ public class MainWindow extends JFrame {
 	                }          
 	            }           
 	        });
-        JMenuItem item_reloadFile = new JMenuItem("Reload file");
+        item_loadFile.setAccelerator(KeyStroke.getKeyStroke("control L"));
+        
+        JMenuItem item_reloadFile = new JMenuItem("Reload file ");
         item_reloadFile.setFont(font);
         fileMenu.add(item_reloadFile);
         item_reloadFile.addActionListener(new ActionListener() {           
@@ -214,7 +220,8 @@ public class MainWindow extends JFrame {
                     	pushToLog("Terminating: Input file '" + LastLoadedFile.getName() + "' does not exist");      
 	            }
 	        });
-	       
+        item_reloadFile.setAccelerator(KeyStroke.getKeyStroke("control R"));
+        
         
         JMenu advancedMenu = new JMenu("Advanced");
         advancedMenu.setFont(font);
@@ -275,5 +282,7 @@ public class MainWindow extends JFrame {
         return menuBar;
 	}
 	
-	
+	public static void requestFocusInCanvas() {
+		canvas.requestFocusInWindow();
+	}
 }

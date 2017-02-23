@@ -38,8 +38,10 @@ public class Parser {
 		Quest_IDs = new LinkedHashSet<String>();
 		MentionedNPCs = new LinkedHashSet<String>();
 		
+		// TODO add an ability to import whitelisted symbols 🎜♫♩
+		
 		ValidSpeechName = Pattern.compile("^([\\w\\s]+)( \\(\\w+\\))?"); // Name (emotion)
-		ValidSpeechText = Pattern.compile("[\\w\\s;,\\.!\\?\\$'\"\\-����&%�]+"); // NO ':' allowed!
+		ValidSpeechText = Pattern.compile("[\\w\\s;,\\.!\\?\\$'\"\\-“”‘’&%…🎜♫♩]+"); // NO ':' allowed!
 		ValidCommand = Pattern.compile("[\\w\\?\\s:<>=\\-]+"); // \w ? \s : <>=- 
 		ValidCondition = Pattern.compile("[\\w\\?\\s:<>=\\-\\|^&]+");
 		ValidLabel = Pattern.compile("^\\[\\w+\\]");
@@ -267,7 +269,6 @@ public class Parser {
 			
 			// Unknown NPC name
 			boolean line_contains_npc_name = false;
-			//m = (Pattern.compile("^([\\w\\s]+)( \\(\\w+\\))?:.+")).matcher(str);
 			m = (Pattern.compile("^[^?*>].+(?=:)")).matcher(str);
 			if (m.find()) {
 				String npc_name = m.group().trim();
