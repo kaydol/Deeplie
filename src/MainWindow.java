@@ -2,6 +2,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
@@ -13,6 +14,7 @@ import java.io.IOException;
 import java.util.List;
 
 import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -21,9 +23,10 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JSplitPane;
+import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
 import javax.swing.TransferHandler;
 import javax.swing.border.Border;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -34,29 +37,35 @@ public class MainWindow extends JFrame {
 	private static final long serialVersionUID = -3880026026104218593L;
 	private static JTextArea console;
 	private static Canvas canvas;
+	private static JTabbedPane tabbedPane;
+	private static JScrollPane consoleScrollpane;
 	
 	public static File LastLoadedFile;
 	public static AboutWindow aboutWindow;
 	public static AdvancedWindow advancedWindow;
 	public static CommandsWindow commandsWindow;
-	private static FileNameExtensionFilter filter;
+	public static Parser parser = new Parser();
+	
+	
+	private static FileNameExtensionFilter filter = new FileNameExtensionFilter("pscript file (.pscript .txt)", "pscript", "txt");
 	
 	public static String prefix_error = "   ";
 	public static String prefix_example = "         ";
 	public static String prefix_info = "";
 	public static String prefix_terminating = "";
-	
 	public static String ProgramName = "LoE .pscript Visualiser “Deeplie”";
+	public static Font menuFont = new Font("Verdana", Font.PLAIN, 12);
+	public static Font consoleFont = new Font("Verdana", Font.PLAIN, 13);
 	
-	/**
-	 * 
-	 */
+	private static TextEditorPane EditorPane;
+	private static boolean freshlyOpened = true; 
+	private static boolean unsavedChanges = false;
+	
+	
 	public MainWindow() {
 		
 		super(ProgramName);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		
-		filter = new FileNameExtensionFilter("pscript file (.pscript .txt)", "pscript", "txt");
 		
     	//////////////////
     	//	Content		//
@@ -78,9 +87,9 @@ public class MainWindow extends JFrame {
     	console.setLineWrap(true);
     	console.setWrapStyleWord(true);
     	console.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
-    	console.setFont(new Font("Verdana", Font.PLAIN, 13));
+    	console.setFont(consoleFont);
     	console.setEditable(false);
-    	JScrollPane consoleScrollpane = new JScrollPane(console);
+    	consoleScrollpane = new JScrollPane(console);
     	//consoleScrollpane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
     	consoleScrollpane.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15), inner));
     	consoleScrollpane.setPreferredSize(new Dimension(400, 200));
@@ -90,13 +99,19 @@ public class MainWindow extends JFrame {
     	//	Adding		//
     	//////////////////
     	
-    	JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, canvasHolder, consoleScrollpane);
-    	background.add(splitPane, BorderLayout.CENTER);
+    	//JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, canvasHolder, consoleScrollpane);
     	
-    	//background.add(canvasHolder, BorderLayout.CENTER);
-    	//background.add(consoleScrollpane, BorderLayout.EAST);
-		
-    	add(background);
+    	EditorPane = new TextEditorPane();
+    	ImageIcon editorIcon = new ImageIcon(new ImageIcon("application_edit.png").getImage().getScaledInstance(16, 16, Image.SCALE_DEFAULT));
+    	ImageIcon consoleIcon = new ImageIcon(new ImageIcon("application_xp_terminal.png").getImage().getScaledInstance(16, 16, Image.SCALE_DEFAULT));
+    	ImageIcon canvasIcon = new ImageIcon(new ImageIcon("canvas.png").getImage().getScaledInstance(16, 16, Image.SCALE_DEFAULT));
+    	
+    	tabbedPane = new JTabbedPane();
+    	tabbedPane.setFont(menuFont);
+    	tabbedPane.addTab("Text Editor", editorIcon, EditorPane);
+    	tabbedPane.addTab("Canvas", canvasIcon, canvasHolder);
+    	tabbedPane.addTab("Console", consoleIcon, consoleScrollpane);
+    	background.add(tabbedPane, BorderLayout.CENTER);
     	
     	JPanel glass = (JPanel) getGlassPane();
 	    glass.setVisible(true);
@@ -113,43 +128,62 @@ public class MainWindow extends JFrame {
 						File f = files.get(0);
 						if (filter.accept(f)) {
 							LastLoadedFile = f;
-							processFile(f.getAbsolutePath());
+							parser.readFromFile(f.getAbsolutePath());
+							updateState(true);
 						}
 						else 
-							pushToLog("Terminating: file should have either .txt or .pscript extension");
+							pushToLog(-1, "Terminating: file should have either .txt or .pscript extension");
 					}
 					if (files.size() > 1)
-						pushToLog("Info: when you drag&drop more than 1 files, only one is processed");
+						pushToLog(-1, "Info: when you drag&drop more than 1 files, only one is processed");
 					
 				} catch (UnsupportedFlavorException | IOException  e) {
-					pushToLog("Terminating: Make sure the file exists and uses UTF-8 encoding");
+					pushToLog(-1, "Terminating: Make sure the file exists and uses UTF-8 encoding");
 					e.printStackTrace();
 				}
 				return true; 
 			}
     	});
     	
+    	add(background);
         setJMenuBar(createMenuBar());
         setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("DeeplieConfused.png")));
         
-		setPreferredSize(new Dimension(850, 500));
+		setPreferredSize(new Dimension(900, 600));
 		pack();
 		setLocationRelativeTo(null);
 		setVisible(true);
 	}
 	
-	public static void processFile(String filename) throws IOException {
+	public static void updateState(boolean reloadEditor) {
 		log = "";
-		canvas.resetCanvas();
-		pushToLog("Input file = " + filename);
-		Parser parser = new Parser(filename);
-		canvas.setData(parser.getTrees(), parser.getPool());
-		canvas.repaintCanvas();
+		pushToLog(-1, "Input file = " + LastLoadedFile);
 		
-		Main.window.setTitle(ProgramName + " | " + LastLoadedFile.getName());
+		pushToLog(-1, "");
+		for (int i : parser.Errors.keySet()) {
+			for (String s : parser.Errors.get(i))
+				pushToLog(i, s);
+		}
+		
+		SwingUtilities.invokeLater(new Runnable() {
+		    public void run() {
+		    	consoleScrollpane.getVerticalScrollBar().setValue(0);
+		    }
+		});
+		
+		canvas.resetCanvas();
+		canvas.setData(parser.getTrees(), parser.getPool());
+		if (canvas.isShowing())
+			canvas.repaintCanvas(); 
+		
+		if (reloadEditor)
+			EditorPane.loadText(MainWindow.parser.getText());
+		freshlyOpened = false;
+		
+		Main.window.unsavedChanges(false);
 	}
 	
-	public static void pushToLog(String msg) {
+	public static void pushToLog(int lineNumber, String msg) {
 		
 		if (msg.trim().startsWith("Terminating:"))
 			msg = prefix_terminating + msg;
@@ -160,21 +194,21 @@ public class MainWindow extends JFrame {
 		if (msg.trim().startsWith("Valid"))
 			msg = prefix_error + '|' + prefix_example + msg;
 		
+		if (lineNumber >= 0)
+			msg += ", at line " + lineNumber;
+		
 		log += msg + System.lineSeparator();
 		console.setText(log);
 	}
 	
-	
 	public static JMenuBar createMenuBar() {
-		Font font = new Font("Verdana", Font.PLAIN, 12);
-
-        JMenuBar menuBar = new JMenuBar();
+		JMenuBar menuBar = new JMenuBar();
          
         JMenu fileMenu = new JMenu("File");
-        fileMenu.setFont(font);
+        fileMenu.setFont(menuFont);
         
         JMenuItem item_loadFile = new JMenuItem("Load .pscript file ");
-        item_loadFile.setFont(font);
+        item_loadFile.setFont(menuFont);
         fileMenu.add(item_loadFile);
         item_loadFile.addActionListener(new ActionListener() {           
 	            public void actionPerformed(ActionEvent e) {
@@ -187,52 +221,66 @@ public class MainWindow extends JFrame {
 	                    if (file.exists()) {
 	                		try {
 	                			LastLoadedFile = file;
-	                			processFile(file.getAbsolutePath());
+	                			parser.readFromFile(LastLoadedFile.getAbsolutePath());
+								updateState(true);
 	                		} catch (IOException e1) {
-	                			pushToLog("Terminating: Make sure the file exists and uses UTF-8 encoding");
+	                			pushToLog(-1, "Terminating: Make sure the file exists and uses UTF-8 encoding");
 	                			e1.printStackTrace();
 	                		}
 	                    } else
-	                    	pushToLog("Terminating: Input file '" + file.getName() + "' does not exist");
+	                    	pushToLog(-1, "Terminating: Input file '" + file.getName() + "' does not exist");
 	                }          
 	            }           
 	        });
         item_loadFile.setAccelerator(KeyStroke.getKeyStroke("control L"));
         
         JMenuItem item_reloadFile = new JMenuItem("Reload file ");
-        item_reloadFile.setFont(font);
+        item_reloadFile.setFont(menuFont);
         fileMenu.add(item_reloadFile);
         item_reloadFile.addActionListener(new ActionListener() {           
 	            public void actionPerformed(ActionEvent e) {
 	            	if (LastLoadedFile == null) {
-	            		pushToLog(prefix_terminating + "Terminating: You didn't load any files yet, nothing to reload");
+	            		pushToLog(-1, prefix_terminating + "Terminating: You didn't load any files yet, nothing to reload");
 	            		return;
 	            	}
 	            	if (LastLoadedFile.exists()) {
                 		try {
-                			processFile(LastLoadedFile.getAbsolutePath());
+                			parser.readFromFile(LastLoadedFile.getAbsolutePath());
+							updateState(true);
                 		} catch (IOException e1) {
-                			pushToLog("Terminating: Make sure the file exists and uses UTF-8 encoding");
+                			pushToLog(-1, "Terminating: Make sure the file exists and uses UTF-8 encoding");
                 			e1.printStackTrace();
                 			return;
                 		}
                     } else
-                    	pushToLog("Terminating: Input file '" + LastLoadedFile.getName() + "' does not exist");      
+                    	pushToLog(-1, "Terminating: Input file '" + LastLoadedFile.getName() + "' does not exist");      
 	            }
 	        });
         item_reloadFile.setAccelerator(KeyStroke.getKeyStroke("control R"));
         
+        JMenuItem item_saveToFile = new JMenuItem("Save file ");
+        item_saveToFile.setFont(MainWindow.menuFont);
+        fileMenu.add(item_saveToFile);
+        item_saveToFile.addActionListener(new ActionListener() {           
+	            public void actionPerformed(ActionEvent e) {
+	            	if (LastLoadedFile != null) {
+	            		EditorPane.writeToFile();
+	            		((MainWindow) EditorPane.getTopLevelAncestor()).unsavedChanges(false);
+	            	}
+	            }
+	        });
+        item_saveToFile.setAccelerator(KeyStroke.getKeyStroke("control S"));
         
         JMenu advancedMenu = new JMenu("Advanced");
-        advancedMenu.setFont(font);
+        advancedMenu.setFont(menuFont);
         
         JMenuItem item_openAdvanced = new JMenuItem("Advanced editing");
-        item_openAdvanced.setFont(font);
+        item_openAdvanced.setFont(menuFont);
         advancedMenu.add(item_openAdvanced);
         item_openAdvanced.addActionListener(new ActionListener() {           
 	            public void actionPerformed(ActionEvent e) {
 	            	if (LastLoadedFile == null) {
-	            		pushToLog("Terminating: You didn't load any files yet, nothing to edit");
+	            		pushToLog(-1, "Terminating: You didn't load any files yet, nothing to edit");
 	            		return;
 	            	}
 	            	if (advancedWindow == null) {
@@ -245,7 +293,7 @@ public class MainWindow extends JFrame {
 	        });
         
         JMenuItem item_openCommands = new JMenuItem("Supported commands");
-        item_openCommands.setFont(font);
+        item_openCommands.setFont(menuFont);
         advancedMenu.add(item_openCommands);
         item_openCommands.addActionListener(new ActionListener() {           
 	            public void actionPerformed(ActionEvent e) {
@@ -260,9 +308,9 @@ public class MainWindow extends JFrame {
         
         
         JMenu aboutMenu = new JMenu("About");
-        aboutMenu.setFont(font);
+        aboutMenu.setFont(menuFont);
 	        JMenuItem item_openAbout = new JMenuItem("Open about");
-	        item_openAbout.setFont(font);
+	        item_openAbout.setFont(menuFont);
 	        aboutMenu.add(item_openAbout);
 	        item_openAbout.addActionListener(new ActionListener() {           
 	            public void actionPerformed(ActionEvent e) {
@@ -284,5 +332,21 @@ public class MainWindow extends JFrame {
 	
 	public static void requestFocusInCanvas() {
 		canvas.requestFocusInWindow();
+	}
+	
+	public void unsavedChanges(boolean b) {
+		if (freshlyOpened) {
+			Main.window.setTitle(ProgramName + " | " + LastLoadedFile.getName());
+			return;
+		} 
+		if (unsavedChanges == b)
+			return;
+		
+		unsavedChanges = b;
+		if (b)
+			setTitle(ProgramName + " | *" + LastLoadedFile.getName()); 	//  File has unsaved changes
+		else 
+			setTitle(ProgramName + " | " + LastLoadedFile.getName()); 	//  File has no unsaved changes
+		
 	}
 }

@@ -14,7 +14,7 @@ public class Syntax {
 		commands.add(new Command("hasitem?", new String[] {"<-1:\\d+>", "<\\d+(:\\d+)?>"},new String[] {"* hasitem? <ItemID> :LabelName", "* hasitem? <ItemID:amount> :LabelName"}));
 		commands.add(new Command("hasitemequipped?", "<\\d(, \\d+){4}>", new String[] {"* hasitemequipped? <ItemID> :LabelName", "* hasitemequipped? <ItemID, ItemID, ItemID, ItemID, ItemID> :LabelName"}));
 		
-		//commands.add(new Command("hascutiemark?", "<\\d+>", true, new String[] {"* hascutiemark? <TalentMarkID> :LabelName"}));
+		commands.add(new Command("hascutiemark?", "<\\d+>", new String[] {"* hascutiemark? <MarkID> :LabelName"}));
 		
 		commands.add(new Command("takeitem", new String[] {"-1 \\d+", "\\d+ \\d+"}, new String[] {"* takeitem ItemID amount"}));
 		commands.add(new Command("giveitem", new String[] {"-1 \\d+", "\\d+ \\d+"}, new String[] {"* giveitem ItemID amount"}));
@@ -43,7 +43,7 @@ public class Syntax {
 		commands.add(new Command("israce?", new String[] {"<Pegasus>", "<Unicorn>", "<Earth>"}, new String[] {"* israce? <[Pegasus|Unicorn|Earth]> :LabelName"}));
 		commands.add(new Command("isage?", new String[] {"<Colt>", "<Stallion>", "<Filly>", "<Mare>"}, new String[] {"* isage? <[Colt|Stallion|Filly|Mare]> :LabelName"}));
 		
-		commands.add(new Command("f", new String[] {"ChangeRoom\\(\\w+\\)", "PlaySound\\(.+\\)", "TeleportTo\\(.+\\)"}, new String[] {"* f ChangeRoom(Cantermore)", "* f PlaySound(SFX/Level_Up_TM_SFX)", "* f TeleportTo(position->\"-323, 45, -22.9\")", "* f TeleportTo(npcs->Wellington)"}));
+		commands.add(new Command("f", new String[] {"ChangeRoom\\(\\w+\\)", "PlaySound\\(.+\\)", "TeleportTo\\(.+\\)", "Announce\\(.+\\)"}, new String[] {"* f ChangeRoom(Cantermore)", "* f PlaySound(SFX/Level_Up_TM_SFX)", "* f TeleportTo(position->\"-323, 45, -22.9\")", "* f TeleportTo(npcs->Wellington)", "* f Announce(Some years later...)"}));
 		
 		commands.add(new Command("playsound", new String[] {"(\\w+\\/)*(\\w+)"}, new String[] {"* playsound Music/All/Battle_Boss", "* playsound SFX/Chicken_Pain03"}));
 		

@@ -66,18 +66,16 @@ public class AboutWindow extends JFrame {
 		pushToBox(rightTextBox, "");
 		pushToBox(rightTextBox, "~ Hit the `Documentation` button on the left and read what Deeplie has to say");
 		pushToBox(rightTextBox, "~ You can drag & drop .pscript files into the program window to open them quickly");
-		pushToBox(rightTextBox, "~ Use RightMouseButton and MouseWheel for navigating in the canvas");
-		pushToBox(rightTextBox, "~ You can move trees by dragging red nodes with LeftMouseButton");
-		pushToBox(rightTextBox, "~ You can move the slider between canvas and text area to enlarge the preferable area");
-		pushToBox(rightTextBox, "~ If you made some changes in the file, click `File > Reload file` button to quickly update the state");
+		pushToBox(rightTextBox, "~ Use RightMouseButton and MouseWheel for navigating in Canvas");
+		pushToBox(rightTextBox, "~ You can move trees in Canvas by dragging red nodes with LeftMouseButton");
 		pushToBox(rightTextBox, "~ You can auto-correct some of the common mistakes in `Advanced > Advanced editing` menu.");
 		
 		pushToBox(rightTextBox, "");
 		pushToBox(rightTextBox, "___ Send your feedback ___");
 		pushToBox(rightTextBox, "");
-		pushToBox(rightTextBox, "My Discord is on the left, see `Creator` line. Please, send me your feedback and ideas about what errors should also be recognized, as well as undetected mistakes or other problems.");
+		pushToBox(rightTextBox, "My Discord is on the left, see `Creator` line. Please, send me your feedback, questions and ideas, and undetected mistakes.");
 		pushToBox(rightTextBox, "");
-		pushToBox(rightTextBox, "Before using the program, make sure you're having the latest version. Also, make sure the file has the `UTF-8 (without BOM)` encoding.");
+		pushToBox(rightTextBox, "Before using the program, make sure you're having the latest version. Also, make sure the file has the `UTF-8` (without BOM) encoding.");
 		
 		//////////////////////
 		//	Left side		//
@@ -101,7 +99,7 @@ public class AboutWindow extends JFrame {
 		
 		pushToBox(leftTextBox, "LoE .pscript Visualiser “Deeplie”");
 		pushToBox(leftTextBox, "Creator: Fess#2162");
-		pushToBox(leftTextBox, "Version: 1.22"); 
+		pushToBox(leftTextBox, "Version: 2.0"); 
 		pushToBox(leftTextBox, ""); 
 		pushToBox(leftTextBox, "LoE Script Implementation DEP"); 
 		

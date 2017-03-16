@@ -44,10 +44,10 @@ public class AdvancedWindow extends JFrame {
 		background.setBorder(outer);
 		
 		JCheckBox box_doubleSpace = new JCheckBox("Put 2 spaces after the end of each sentence and 1 after commas");
-		JCheckBox box_asteriskSpace = new JCheckBox("Add 1 space after each asterisk");
-		JCheckBox box_speechSpace = new JCheckBox("Add a space before Speech in NPCNAME:Speech");
-		JCheckBox box_replySpace = new JCheckBox("Add a space after each > symbol in Responses");
-		JCheckBox box_capitalize = new JCheckBox("Captialize $PLAYERNAME and BEGINNING\\END in labels and gotos");
+		JCheckBox box_asteriskSpace = new JCheckBox("Put exactly 1 space after each asterisk & questionmark");
+		JCheckBox box_speechSpace = new JCheckBox("Put a space before Speech in NPCNAME:Speech");
+		JCheckBox box_replySpace = new JCheckBox("Put 1 space after each > symbol in Responses");
+		JCheckBox box_capitalize = new JCheckBox("Captialize $PLAYERNAME, BEGINNING & END in labels and gotos");
 		JCheckBox box_quotes = new JCheckBox("Replace every ' with ’");
 		JCheckBox box_dots1 = new JCheckBox("Replace every 3 dots (...) with 1 symbol (…)");
 		JCheckBox box_dots2 = new JCheckBox("Replace every (…) with 3 dots (...)");
@@ -71,7 +71,7 @@ public class AdvancedWindow extends JFrame {
 				try {
 					text = Files.readAllLines(MainWindow.LastLoadedFile.toPath(), Charset.forName("UTF-8"));
 				} catch (IOException e1) {
-					MainWindow.pushToLog("Terminating: Make sure the file exists and uses UTF-8 encoding");
+					MainWindow.pushToLog(-1, "Terminating: Make sure the file exists and uses UTF-8 encoding");
 					e1.printStackTrace();
 					return;
 				}
@@ -85,8 +85,12 @@ public class AdvancedWindow extends JFrame {
             			s = s.replaceAll("([!?.])([^\\s\\.])", "$1  $2");
             			s = s.replaceAll(",([^\\s])", ",  $1");
             		}
-            		if (box_asteriskSpace.isSelected())
-            			s = s.replaceAll("\\*([^\\s])", "* $1");
+            		if (box_asteriskSpace.isSelected()) {
+            			s = s.replaceAll("\\*([^\\s])", "* $1"); // putting one space if none found
+            			s = s.replaceAll("\\* \\s+(.+)", "* $1"); // deleting excess spaces if more than 1 space found
+            			s = s.replaceAll("\\?([^\\s])", "? $1"); // putting one space if none found
+            			s = s.replaceAll("\\? \\s+(.+)", "? $1"); // deleting excess spaces if more than 1 space found
+            		}
             		if (box_speechSpace.isSelected())
             			s = s.replaceAll("^(\\w+):([^\\s])", "$1: $2");
             		if (box_replySpace.isSelected())
@@ -109,14 +113,16 @@ public class AdvancedWindow extends JFrame {
             	try {
 					Files.write(MainWindow.LastLoadedFile.toPath(), text, StandardCharsets.UTF_8);
 				} catch (IOException e1) {
-					MainWindow.pushToLog("Terminating: Error while writing the file");
+					MainWindow.pushToLog(-1, "Terminating: Error while writing to file");
 					e1.printStackTrace();
 				}
             	
             	try {
-					MainWindow.processFile(MainWindow.LastLoadedFile.getPath());
-				} catch (IOException e1) {
-					MainWindow.pushToLog("Terminating: Error while reloading the file");
+					MainWindow.parser.readFromFile(MainWindow.LastLoadedFile.getPath());
+					MainWindow.updateState(true);
+				}
+            	catch (IOException e1) {
+					MainWindow.pushToLog(-1, "Terminating: Error while reloading the file");
 					e1.printStackTrace();
 				}
             }           

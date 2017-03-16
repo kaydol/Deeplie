@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -16,57 +17,71 @@ public class Parser {
 	private List<String> text;
 	private List<Node> trees;
 	private List<Node> pool;
-	private Syntax pscript;
 	
-	private HashSet<String> Activated_QuestIDs;
-	private HashSet<String> Completed_QuestIDs;
-	private HashSet<String> Activated_Objectives;
-	private HashSet<String> Completed_Objectives;
-	private LinkedHashSet<Integer> Quest_Stages;
-	private LinkedHashSet<String> Quest_IDs;
-	private LinkedHashSet<String> MentionedNPCs;
+	private Syntax pscript = new Syntax();
+	private HashSet<String> DefinedLabels = new HashSet<String>();
+	private HashSet<String> Activated_QuestIDs = new HashSet<String>();
+	private HashSet<String> Completed_QuestIDs = new HashSet<String>();
+	private HashSet<String> Activated_Objectives = new HashSet<String>();
+	private HashSet<String> Completed_Objectives = new HashSet<String>();
+	private LinkedHashSet<Integer> Quest_Stages = new LinkedHashSet<Integer>();
+	private LinkedHashSet<String> Quest_IDs = new LinkedHashSet<String>();
+	private LinkedHashSet<String> MentionedNPCs = new LinkedHashSet<String>();
 	
 	private Pattern ValidSpeechName, ValidSpeechText, ValidCommand, ValidCondition, ValidLabel;
 	
-	public Parser(String filename) throws IOException {
-		pscript = new Syntax();
-		Activated_QuestIDs = new HashSet<String>();
-		Completed_QuestIDs = new HashSet<String>();
-		Activated_Objectives = new HashSet<String>();
-		Completed_Objectives = new HashSet<String>();
-		Quest_Stages = new LinkedHashSet<Integer>();
-		Quest_IDs = new LinkedHashSet<String>();
-		MentionedNPCs = new LinkedHashSet<String>();
-		
-		// TODO add an ability to import whitelisted symbols 🎜♫♩
+	public TreeMap<Integer, List<String>> Errors =  new TreeMap<Integer, List<String>>();
+	
+	public Parser() {
 		
 		ValidSpeechName = Pattern.compile("^([\\w\\s]+)( \\(\\w+\\))?"); // Name (emotion)
-		ValidSpeechText = Pattern.compile("[\\w\\s;,\\.!\\?\\$'\"\\-“”‘’&%…🎜♫♩]+"); // NO ':' allowed!
+		ValidSpeechText = Pattern.compile("[^:#]+"); // blacklisted symbols
 		ValidCommand = Pattern.compile("[\\w\\?\\s:<>=\\-]+"); // \w ? \s : <>=- 
 		ValidCondition = Pattern.compile("[\\w\\?\\s:<>=\\-\\|^&]+");
 		ValidLabel = Pattern.compile("^\\[\\w+\\]");
 		
-		readFile(filename);
-		performAnalysis();
-		buildTree();
 	}
 	
-	public void readFile(String filename) throws IOException {
-		
-		File file = new File(filename);	
-		if (!file.exists())
-			MainWindow.pushToLog("Error: no such file in directory '" + filename + "'");
-		
-		text = Files.readAllLines(file.toPath(), Charset.forName("UTF-8"));
-		
+	private void clearData() {
+		Errors.clear();
+		DefinedLabels.clear();
 		Activated_QuestIDs.clear();
 		Completed_QuestIDs.clear();
 		Activated_Objectives.clear();
 		Completed_Objectives.clear();
 		Quest_Stages.clear();
 		Quest_IDs.clear();
+	}
+	
+	public void readFromFile(String filename) throws IOException {
 		
-		MainWindow.pushToLog("Info: finished reading file, " + text.size() + " lines total");
+		File file = new File(filename);	
+		if (!file.exists()) {
+			MainWindow.pushToLog(-1, "Error: no such file in directory '" + filename + "'");
+			return;
+		}
+		
+		clearData();
+		text = Files.readAllLines(file.toPath(), Charset.forName("UTF-8"));
+		MainWindow.pushToLog(-1, "Info: finished reading file, " + text.size() + " lines total");
+		
+		buildTree();
+		performAnalysis();
+	}
+	
+	public void setText(List<String> lines) {
+		clearData();
+		text = lines;
+		buildTree();
+		performAnalysis();
+	}
+	
+	private void addError(int lineNumber, String description) {
+		
+		if (!Errors.containsKey(lineNumber))
+			Errors.put(lineNumber, new ArrayList<String>());
+		
+		Errors.get(lineNumber).add(description);
 	}
 	
 	private void performAnalysis() {
@@ -76,7 +91,7 @@ public class Parser {
 		HashSet<String> npc_names = new HashSet<String>();
 
 		// This message repeats a lot, so I put in a variable
-		String errInappropriateSymbol = "Error: inappropriate symbol(s) at line ";
+		String errInappropriateSymbol = "Error: inappropriate symbol(s)";
 		
 
 		for (int i = 0; i < text.size(); ++i) {
@@ -92,18 +107,18 @@ public class Parser {
 			
 			if (str.startsWith("*") && !str.matches("\\*" + ValidCommand.pattern())) {
 				
-				if (str.matches("\\* runscript .+") || str.matches("\\* f .+") || str.matches("\\* playsound .+")) {
+				if (str.matches("\\*\\s*runscript .+") || str.matches("\\*\\s*f .+") || str.matches("\\*\\s*playsound .+")) {
 					// These commands may have some very rare symbols in their arguments, and I don't want to 
 					// add those very specific symbols into a common whitelist used by all other commands
 					// Instead, those symbols will be treated by the regular expression of those commands 
 				}
 				else {
-					MainWindow.pushToLog(errInappropriateSymbol + (i+1));
+					addError(i+1, errInappropriateSymbol);
 					continue;
 				}
 			}
 			if (str.startsWith("?") && !str.matches("\\?" + ValidCondition.pattern())) {
-				MainWindow.pushToLog(errInappropriateSymbol + (i+1));
+				addError(i+1, errInappropriateSymbol);
 				continue;
 			}
 			
@@ -113,14 +128,14 @@ public class Parser {
 				npc_names.add(m.group(1));
 				npc_names.add(m.group(2));
 				if (!currentLabel.isEmpty())
-					MainWindow.pushToLog("Error: having 'aliasname' in the middle of the script, at line " + (i+1));
+					addError(i+1, "Error: having 'aliasname' in the middle of the script");
 				continue;
 			}
 			
 			// " : "
 			m = (Pattern.compile("\\s:\\s")).matcher(str);
 			if (m.find()) { 
-				MainWindow.pushToLog("Error: ':' shouldn't be surrounded by two spaces at line " + (i+1));
+				addError(i+1, "Error: ':' shouldn't be surrounded by two spaces");
 				continue;
 			}
 			
@@ -128,14 +143,14 @@ public class Parser {
 			// digits added to prevent shooting at <-1:10> alike constructions, used by hasitem? command
 			m = (Pattern.compile("[^\\s\\d]:[^\\s\\d]")).matcher(str);
 			if (m.find()) { 
-				MainWindow.pushToLog("Error: at least one space must be present near ':' at line " + (i+1));
+				addError(i+1, "Error: at least one space must be present near ':'");
 				continue;
 			}
 			
 			// ">Text" instead of "> Text"
 			m = (Pattern.compile("^\\s*>[^\\s]")).matcher(str);
 			if (m.find()) { 
-				MainWindow.pushToLog("Error: > should be followed by space at line " + (i+1));
+				addError(i+1, "Error: > should be followed by space");
 				continue;
 			}
 			
@@ -143,7 +158,7 @@ public class Parser {
 			m = (Pattern.compile("^>.*|^\\?.*")).matcher(str);
 			if (m.find()) {
 				if (!str.matches(".*:\\w+$")) {
-					MainWindow.pushToLog("Error: missing label at line " + (i+1));
+					addError(i+1, "Error: missing label");
 					continue;
 				}
 			}
@@ -155,7 +170,7 @@ public class Parser {
 					++beginIndex;
 				int endIndex = str.lastIndexOf(':');
 				if (!str.substring(beginIndex, endIndex).matches(ValidSpeechText.pattern())) {
-					MainWindow.pushToLog("Error: inappropriate symbol(s) in Response at line " + (i+1));
+					addError(i+1, "Error: inappropriate symbol(s) in Response");
 					continue;
 				}
 			}
@@ -177,7 +192,7 @@ public class Parser {
 			// Missed pipe in Optional Responses
 			m = (Pattern.compile("\\|(.*\\|)?")).matcher(str);
 			if (m.find() && str.startsWith(">") && m.group(1) == null) {
-				MainWindow.pushToLog("Error: the second pipe symbol was missed in the Optional Response at line " + (i+1));
+				addError(i+1, "Error: second pipe symbol is missing in the Optional Response");
 				continue;
 			}
 			
@@ -185,21 +200,21 @@ public class Parser {
 			// Missing command after asterisk\?
 			m = (Pattern.compile("^[?*](.+)?")).matcher(str);
 			if (m.find() && m.group(1) == null) { 
-				MainWindow.pushToLog("Error: missing command after asterisk\\questionmark at line " + (i+1));
+				addError(i+1, "Error: missing command after asterisk\\questionmark");
 				continue;
 			}
 			
 			// More than 1 space after asterisk\?
 			m = (Pattern.compile("^[?*]\\s{2,}")).matcher(str);
 			if (m.find()) { 
-				MainWindow.pushToLog("Error: more than 1 space after asterisk\\questionmark at line " + (i+1));
+				addError(i+1, "Error: more than 1 space after asterisk\\questionmark");
 				continue;
 			}
 			
 			// `*command` ~ missed space after asterisk
 			m = (Pattern.compile("[?*](\\w+\\??)")).matcher(str);
 			if (m.find()) {
-				MainWindow.pushToLog("Error: missed space after asterisk\\questionmark in '" + m.group() + "' at line " + (i+1));
+				addError(i+1, "Error: missed space after asterisk\\questionmark in '" + m.group() + "'");
 				continue;
 			}
 			
@@ -210,7 +225,7 @@ public class Parser {
 				if (pscript.commandExists(m.group(1))) {
 					Command c = pscript.findCommand(m.group(1));
 					if (c.isConditional() && !str.matches(".*:\\w+$")) {
-						MainWindow.pushToLog("Error: missing label for '" + m.group(1) + "' at line " + (i+1));
+						addError(i+1, "Error: missing label for '" + m.group(1) + "'");
 						continue;
 					}
 				} else {
@@ -240,12 +255,12 @@ public class Parser {
 			// uncapitalized BEGINNING and END in goto and :Labels
 			m = (Pattern.compile("(?<=goto )[Ee][Nn][Dd]|(?<=:)[Ee][Nn][Dd]")).matcher(str);
 			if (m.find() && !m.group().equals("END")) {
-				MainWindow.pushToLog("Error: uncapitalized END at line " + (i+1));
+				addError(i+1, "Error: uncapitalized END");
 				continue;
 			}
 			m = (Pattern.compile("(?<=goto )[Bb][Ee][Gg][Ii][Nn][Nn][Ii][Nn][Gg]|(?<=:)[Bb][Ee][Gg][Ii][Nn][Nn][Ii][Nn][Gg]")).matcher(str);
 			if (m.find() && !m.group().equals("BEGINNING")) {
-				MainWindow.pushToLog("Error: uncapitalized BEGINNING at line " + (i+1));
+				addError(i+1, "Error: uncapitalized BEGINNING");
 				continue;
 			}
 			
@@ -253,17 +268,17 @@ public class Parser {
 			// wrong capitalization in variables
 			m = (Pattern.compile("\\$[Pp][Ll][Aa][Yy][Ee][Rr][Nn][Aa][Mm][Ee]")).matcher(str);
 			if (m.find() && !m.group().equals("$PLAYERNAME")) {
-				MainWindow.pushToLog("Error: uncapitalized $PLAYERNAME at line " + (i+1));
+				addError(i+1, "Error: uncapitalized $PLAYERNAME");
 				continue;
 			}
 			m = (Pattern.compile("\\$[Pp][Ll][Aa][Yy][Ee][Rr][Gg][Ee][Nn][Dd][Ee][Rr]")).matcher(str);
 			if (m.find() && !(m.group().equals("$PLAYERGENDER") || m.group().equals("$Playergender"))) {
-				MainWindow.pushToLog("Error: use either $PLAYERGENDER or $Playergender at line " + (i+1));
+				addError(i+1, "Error: use either $PLAYERGENDER or $Playergender");
 				continue;
 			}
 			m = (Pattern.compile("\\$[Pp][Ll][Aa][Yy][Ee][Rr][Rr][Aa][Cc][Ee]")).matcher(str);
 			if (m.find() && !(m.group().equals("$PLAYERRACE") || m.group().equals("$Playerrace"))) {
-				MainWindow.pushToLog("Error: use either $PLAYERRACE or $Playerrace at line " + (i+1));
+				addError(i+1, "Error: use either $PLAYERRACE or $Playerrace");
 				continue;
 			}
 			
@@ -284,7 +299,7 @@ public class Parser {
 							emotion = m.group(2).trim();
 						if (!npc_names.contains(npc_name)) {
 							if (!MentionedNPCs.contains(npc_name)) {
-								MainWindow.pushToLog("Info: new NPC found '" + npc_name + "', first appearance at line " + (i+1));
+								MainWindow.pushToLog(-1, "Info: new NPC found '" + npc_name + "', first appearance at line " + (i+1));
 								MentionedNPCs.add(npc_name);
 							} else {
 								// This NPC wasn't mentioned by aliasname, but we already reported this name
@@ -292,7 +307,7 @@ public class Parser {
 						}
 					}	
 				} else {
-					MainWindow.pushToLog("Error: using colons in speech is forbidden, at line " + (i+1));
+					addError(i+1, "Error: bad NPC name, or having colons (':') in speech");
 					continue;
 				}
 				
@@ -302,7 +317,7 @@ public class Parser {
 			if (line_contains_npc_name) {
 				m = (Pattern.compile("(?<=:).+")).matcher(str);
 				if (m.find() && !m.group().matches(ValidSpeechText.pattern())) {
-					MainWindow.pushToLog(errInappropriateSymbol + (i+1));
+					addError(i+1, errInappropriateSymbol);
 					continue;
 				}
 			}
@@ -334,29 +349,30 @@ public class Parser {
 				}
 				if (!NPC) {
 					if (pscript.commandExists(m.group()))
-						MainWindow.pushToLog("Error: perhaps an asterisk was missed at line " + (i+1));
+						addError(i+1, "Error: perhaps an asterisk was missed");
 					else
-						MainWindow.pushToLog(errInappropriateSymbol + (i+1));
+						addError(i+1, errInappropriateSymbol);
 				}
 			}
 		}
 		
-
+		// TODO change to addError(line, msg); Lines with first occurrences have to be found first
+		
 		for (String task: Activated_Objectives) {
 			if (!Completed_Objectives.contains(task)) 
-				MainWindow.pushToLog("Error: objective '" + task + "' was activated, but never was completed\\cancelled");			
+				MainWindow.pushToLog(-1, "Error: objective '" + task + "' was activated, but never was completed\\cancelled");			
 		}
 		for (String task: Completed_Objectives) {
 			if (!Activated_Objectives.contains(task)) 
-				MainWindow.pushToLog("Error: objective '" + task + "' was completed\\cancelled, but never was activated");			
+				MainWindow.pushToLog(-1, "Error: objective '" + task + "' was completed\\cancelled, but never was activated");			
 		}
 		for (String quest: Activated_QuestIDs) {
 			if (!Completed_QuestIDs.contains(quest)) 
-				MainWindow.pushToLog("Error: quest '" + quest + "' was activated, but was never completed");			
+				MainWindow.pushToLog(-1, "Error: quest '" + quest + "' was activated, but was never completed");			
 		}
 		for (String quest: Completed_QuestIDs) {
 			if (!Activated_QuestIDs.contains(quest)) 
-				MainWindow.pushToLog("Error: quest '" + quest + "' was completed, but was never activated");			
+				MainWindow.pushToLog(-1, "Error: quest '" + quest + "' was completed, but was never activated");			
 		}
 		
 		String temp = "";
@@ -364,7 +380,7 @@ public class Parser {
 			temp += s + ", ";
 		if (temp.length() == 0)
 			temp = "<No QuestIDs found>  ";
-		MainWindow.pushToLog("Info: mentioned QuestIDs = " + temp.substring(0, temp.length() - 2));
+		MainWindow.pushToLog(-1, "Info: mentioned QuestIDs = " + temp.substring(0, temp.length() - 2));
 		
 		// TODO make a more comfortable way to show this information + change Activated_Objectives to LinkedHashSet to save the order of tasks
 		//temp = "";
@@ -377,7 +393,7 @@ public class Parser {
 			temp += k + ", ";
 		if (temp.length() == 0)
 			temp = "<Command queststage wasn't used>  ";
-		MainWindow.pushToLog("Info: stages set by queststage command = " +  temp.substring(0, temp.length() - 2));
+		MainWindow.pushToLog(-1, "Info: stages set by queststage command = " +  temp.substring(0, temp.length() - 2));
 		
 				
 	}
@@ -386,7 +402,6 @@ public class Parser {
 		
 		// Gathering all nodes in one pool
 		String label = null;
-		HashSet<String> usedLabels = new HashSet<String>();
 		
 		List<String> content = new ArrayList<String>();
 		trees = new ArrayList<Node>();
@@ -399,7 +414,7 @@ public class Parser {
 			if (p.matches(ValidLabel.pattern()) || currentline == text.size()) {
 				// reached another node
 				if (label != null) {
-					usedLabels.add(label);
+					DefinedLabels.add(label);
 					if (currentline == text.size())
 						content.add(p);
 					pool.add(new Node(label, content));
@@ -410,17 +425,16 @@ public class Parser {
 					//content here contains the text above the first [label]
 				}
 				label = p;
-				if (usedLabels.contains(label))
-					MainWindow.pushToLog("Error: duplicate label name " + label + " at line " + currentline);
-
+				if (DefinedLabels.contains(label))
+					addError(currentline, "Error: duplicate label name " + label);
 				content = new ArrayList<String>();
 			}
 			content.add(p);
 		}
 		
-		MainWindow.pushToLog("Info: " + pool.size() + " labels have been found");
+		MainWindow.pushToLog(-1, "Info: " + pool.size() + " labels have been found");
 		if (pool.size() == 0) {
-			MainWindow.pushToLog("Info: no labels found, exiting...");
+			MainWindow.pushToLog(-1, "Info: no labels found, exiting...");
 			return;
 		}
 		
@@ -445,11 +459,12 @@ public class Parser {
 					if (child == null) {
 						// ERROR: no such label 
 						int lineNumber = text.indexOf(s) + 1; 
-						// sometimes lineNumber can glitch and be zero; 
+						// TODO sometimes lineNumber can glitch and be zero; 
 						// this happens when Java fails to find that line in the 'text' array, and indexOf returns -1
 						// Java fails because we search for a trimmed version, and text contains untrimmed strings
-						if (!(label.equals("END") || label.equals("BEGINNING")))
-							MainWindow.pushToLog("Error: no such label ':" + label + "' at line " + lineNumber);
+						if (!(label.equals("END") || label.equals("BEGINNING"))) {
+							addError(lineNumber, "Error: no such label ':" + label + "'");
+						}
 					} else {
 						if (!node.getChildren().contains(child)) {
 							child.addFather(node);
@@ -467,15 +482,15 @@ public class Parser {
 					continue;
 				// seeking for either goto or reliable dialogue answer that will 100% lead us out of the current node
 				// dialogue answer must not contain conditional expression in order to be `reliable`, hehe
-				if (line.matches("^\\* goto \\w+$|^> [^|]+:(\\w+)$")) 
+				if (line.matches("^\\* goto \\w+$|^\\s*>[^|]+:(\\w+)$")) 
 				{
 					found_reliable_exit_point = true;
 					break;
 				} 
 			}
 			if (!found_reliable_exit_point) {
-				int linenumber = text.indexOf(node.getLabel()) + 1;
-				MainWindow.pushToLog("Error: no reliable exit point at node " + node.getLabel() + " starting at line " + linenumber);
+				int lineNumber = text.indexOf(node.getLabel()) + 1;
+				addError(lineNumber, "Error: no reliable exit point from node " + node.getLabel());
 				break;
 			}
 			
@@ -492,8 +507,8 @@ public class Parser {
 				{
 					// No code will be executed after 'goto' jump
 					if (found_goto_jump) {
-						int unreachable_starts_at = text.indexOf(line) + 1;
-						MainWindow.pushToLog("Error: the code at line " + unreachable_starts_at + " and below will never be executed");
+						int unreachable_starts_at = text.indexOf(line) + 1; // TODO get rid of indexOf 
+						addError(unreachable_starts_at, "Error: the code at line " + unreachable_starts_at + " and below will never be executed");
 						break;
 					}
 					if (line.startsWith("*"))
@@ -507,8 +522,8 @@ public class Parser {
 				{
 					// We get here once we found a line that was neither a response nor goto command
 					if (found_something) {
-						int unreachable_starts_at = text.indexOf(line) + 1;
-						MainWindow.pushToLog("Error: the code at line " + unreachable_starts_at + " and below will never be executed");
+						int unreachable_starts_at = text.indexOf(line) + 1; // TODO get rid of indexOf
+						addError(unreachable_starts_at, "Error: the code at line " + unreachable_starts_at + " and below will never be executed");
 						break;
 					}
 				}
@@ -523,12 +538,12 @@ public class Parser {
 				trees.add(node);
 		}
 		
-		MainWindow.pushToLog("Info: " + trees.size() + " trees have been found");
-		MainWindow.pushToLog("Info: parser finished its job");
+		MainWindow.pushToLog(-1, "Info: " + trees.size() + " trees have been found");
+		MainWindow.pushToLog(-1, "Info: parser finished its job");
 		
 	}
 	
-	private boolean parse(String expression, boolean isConditional, boolean isMultiConditional, int linenumber) {
+	private boolean parse(String expression, boolean isConditional, boolean isMultiConditional, int lineNumber) {
 		
 		expression = expression.trim();
 		
@@ -540,7 +555,7 @@ public class Parser {
 		//	return false;
 		//}
 		if (!isMultiConditional && expressions.length > 1) {
-			MainWindow.pushToLog("Error: only one command is allowed after the asterisk at line " + linenumber);
+			addError(lineNumber, "Error: only one command is allowed after the asterisk");
 			return false;
 		}
 		
@@ -552,16 +567,11 @@ public class Parser {
 				Command c = pscript.findCommand(command);
 				String args = exp.substring(exp.indexOf(' '), exp.length()).trim();
 				if (!c.isConditional() && isConditional) {
-					MainWindow.pushToLog("Error: command '" + command + "' is not suitable for using in conditional response, at line " + linenumber);
+					addError(lineNumber, "Error: command '" + command + "' is not suitable for using in conditional response");
 					return false;
 				}
 				if (!c.accepts(args)) {
-					MainWindow.pushToLog("Error: invalid argument '" + args + "' for " + command + " at line " + linenumber);			
-					if (c.hasExamples()) {
-						MainWindow.pushToLog("Valid example:");
-						for (String example : c.getExamples())
-							MainWindow.pushToLog(MainWindow.prefix_error + '|' + MainWindow.prefix_example + example);
-					}
+					addError(lineNumber, "Error: invalid argument '" + args + "' for " + command + "'");
 					return false;
 				}
 				
@@ -596,7 +606,7 @@ public class Parser {
 				}
 			} 
 			else {
-				MainWindow.pushToLog("Error: unknown command '" + command + "' at line " + linenumber);
+				addError(lineNumber, "Error: unknown command '" + command + "'");
 				return false;
 			}
 		}
