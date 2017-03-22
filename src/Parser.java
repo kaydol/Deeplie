@@ -32,6 +32,7 @@ public class Parser {
 	private Pattern ValidSpeechName, ValidSpeechText, ValidCommand, ValidCondition, ValidLabel;
 	
 	public TreeMap<Integer, List<String>> Errors =  new TreeMap<Integer, List<String>>();
+	public List<String> Log = new ArrayList<String>();
 	
 	public Parser() {
 		
@@ -44,6 +45,7 @@ public class Parser {
 	}
 	
 	public void clearData() {
+		Log.clear();
 		Errors.clear();
 		DefinedLabels.clear();
 		Activated_QuestIDs.clear();
@@ -69,7 +71,7 @@ public class Parser {
 		
 		File file = new File(filename);	
 		if (!file.exists()) {
-			MainWindow.pushToLog(-1, "Error: no such file in directory '" + filename + "'");
+			addError(-1, "Error: no such file in directory '" + filename + "'");
 			return;
 		}
 		
@@ -77,8 +79,6 @@ public class Parser {
 		List<String> text = Files.readAllLines(file.toPath(), Charset.forName("UTF-8"));
 		
 		textWithLines = addLinesToText(text);
-
-		MainWindow.pushToLog(-1, "Info: finished reading file, " + text.size() + " lines total");
 		
 		buildTree();
 		performAnalysis();
@@ -315,7 +315,7 @@ public class Parser {
 							emotion = m.group(2).trim();
 						if (!npc_names.contains(npc_name)) {
 							if (!MentionedNPCs.contains(npc_name)) {
-								MainWindow.pushToLog(-1, "Info: new NPC found '" + npc_name + "', first appearance at line " + lineNumber);
+								Log.add("Info: new NPC found '" + npc_name + "', first appearance at line " + lineNumber);
 								MentionedNPCs.add(npc_name);
 							} else {
 								// This NPC wasn't mentioned by aliasname, but we already reported this name
@@ -372,23 +372,21 @@ public class Parser {
 			}
 		}
 		
-		// TODO change to addError(line, msg); Lines with first occurrences have to be found first
-		
 		for (String task: Activated_Objectives) {
 			if (!Completed_Objectives.contains(task)) 
-				MainWindow.pushToLog(-1, "Error: objective '" + task + "' was activated, but never was completed\\cancelled");			
+				addError(-1, "Error: objective '" + task + "' was activated, but never was completed\\cancelled");			
 		}
 		for (String task: Completed_Objectives) {
 			if (!Activated_Objectives.contains(task)) 
-				MainWindow.pushToLog(-1, "Error: objective '" + task + "' was completed\\cancelled, but never was activated");			
+				addError(-1, "Error: objective '" + task + "' was completed\\cancelled, but never was activated");			
 		}
 		for (String quest: Activated_QuestIDs) {
 			if (!Completed_QuestIDs.contains(quest)) 
-				MainWindow.pushToLog(-1, "Error: quest '" + quest + "' was activated, but was never completed");			
+				addError(-1, "Error: quest '" + quest + "' was activated, but was never completed");			
 		}
 		for (String quest: Completed_QuestIDs) {
 			if (!Activated_QuestIDs.contains(quest)) 
-				MainWindow.pushToLog(-1, "Error: quest '" + quest + "' was completed, but was never activated");			
+				addError(-1, "Error: quest '" + quest + "' was completed, but was never activated");			
 		}
 		
 		String temp = "";
@@ -396,7 +394,7 @@ public class Parser {
 			temp += s + ", ";
 		if (temp.length() == 0)
 			temp = "<No QuestIDs found>  ";
-		MainWindow.pushToLog(-1, "Info: mentioned QuestIDs = " + temp.substring(0, temp.length() - 2));
+		Log.add("Info: mentioned QuestIDs = " + temp.substring(0, temp.length() - 2));
 		
 		// TODO make a more comfortable way to show this information + change Activated_Objectives to LinkedHashSet to save the order of tasks
 		//temp = "";
@@ -409,9 +407,7 @@ public class Parser {
 			temp += k + ", ";
 		if (temp.length() == 0)
 			temp = "<Command queststage wasn't used>  ";
-		MainWindow.pushToLog(-1, "Info: stages set by queststage command = " +  temp.substring(0, temp.length() - 2));
-		
-				
+		Log.add("Info: stages set by queststage command = " +  temp.substring(0, temp.length() - 2));
 	}
 	
 	private void buildTree() {
@@ -451,9 +447,9 @@ public class Parser {
 			content.put(currentline, p);
 		}
 		
-		MainWindow.pushToLog(-1, "Info: " + pool.size() + " labels have been found");
+		Log.add("Info: " + pool.size() + " labels have been found");
 		if (pool.size() == 0) {
-			MainWindow.pushToLog(-1, "Info: no labels found, exiting...");
+			Log.add("Info: no labels found, exiting...");
 			return;
 		}
 		
@@ -557,8 +553,7 @@ public class Parser {
 				trees.add(node);
 		}
 		
-		MainWindow.pushToLog(-1, "Info: " + trees.size() + " trees have been found");
-		MainWindow.pushToLog(-1, "Info: parser finished its job");
+		Log.add("Info: " + trees.size() + " trees have been found");
 		
 	}
 	

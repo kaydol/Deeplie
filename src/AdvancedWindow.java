@@ -45,10 +45,10 @@ public class AdvancedWindow extends JFrame {
 		JCheckBox box_replySpace = new JCheckBox("Put 1 space after each > symbol in Responses");
 		JCheckBox box_capitalize = new JCheckBox("Captialize $PLAYERNAME, BEGINNING & END in labels and gotos");
 		JCheckBox box_quotes = new JCheckBox("Replace every ' with ’");
-		JCheckBox box_dots1 = new JCheckBox("Replace every 3 dots (...) with 1 symbol (…)");
-		JCheckBox box_dots2 = new JCheckBox("Replace every (…) with 3 dots (...)");
+		JCheckBox box_dots1 = new JCheckBox("Replace each 3 dots (...) with 1 symbol (…)");
+		JCheckBox box_dots2 = new JCheckBox("Replace each … with 3 dots (...)");
 		
-		Font font = new Font("Verdana", Font.PLAIN, 11);
+		Font font = new Font("Verdana", Font.PLAIN, 12);
 		box_doubleSpace.setFont(font);
 		box_asteriskSpace.setFont(font);
 		box_speechSpace.setFont(font);
@@ -59,7 +59,7 @@ public class AdvancedWindow extends JFrame {
 		box_dots2.setFont(font);
 		
 		
-		JButton commitButton = new JButton("Rewrite the file");
+		JButton commitButton = new JButton("Commit changes to Text Editor");
 		commitButton.addActionListener(new ActionListener() {           
             public void actionPerformed(ActionEvent e) {
             
@@ -100,7 +100,7 @@ public class AdvancedWindow extends JFrame {
             	}
             	
             	MainWindow.EditorPane.loadText(text);
-            	((MainWindow) MainWindow.EditorPane.getTopLevelAncestor()).unsavedChanges(true);
+            	Main.window.unsavedChanges(true);
             	
             }           
         });
@@ -126,7 +126,7 @@ public class AdvancedWindow extends JFrame {
 		add(background);
 		
 		setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("DeeplieConfused.png")));
-		setPreferredSize(new Dimension(450, 360));
+		setPreferredSize(new Dimension(480, 360));
 		pack();
 		setLocationRelativeTo(Main.window);
 		

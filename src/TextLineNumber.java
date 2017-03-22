@@ -106,7 +106,6 @@ public class TextLineNumber extends JPanel implements CaretListener, DocumentLis
 			}
 		});
 		parsingTimer.setRepeats(false);
-		parsingTimer.start();
 		
 		PscriptDocument doc = new PscriptDocument();
 		doc.addDocumentListener(new DocumentListener() {

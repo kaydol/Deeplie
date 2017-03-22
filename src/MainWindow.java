@@ -150,7 +150,7 @@ public class MainWindow extends JFrame {
 							pushToLog(-1, "Terminating: file should have either .txt or .pscript extension");
 					}
 					if (files.size() > 1)
-						pushToLog(-1, "Info: when you drag&drop more than 1 files, only one is processed");
+						pushToLog(-1, "Info: when you drag & drop more than 1 files, only one is processed");
 					
 				} catch (UnsupportedFlavorException | IOException  e) {
 					pushToLog(-1, "Terminating: Make sure the file exists and uses UTF-8 encoding");
@@ -174,6 +174,12 @@ public class MainWindow extends JFrame {
 		log = "";
 		pushToLog(-1, "Input file = " + LastLoadedFile);
 		
+		for (String s : parser.Log)
+			pushToLog(-1, s);
+		
+		pushToLog(-1, "Lines total : " + parser.getText().keySet().size());
+		pushToLog(-1, "Lines with errors : " + parser.Errors.keySet().size());
+		
 		pushToLog(-1, "");
 		for (int i : parser.Errors.keySet()) {
 			for (String s : parser.Errors.get(i))
@@ -195,8 +201,8 @@ public class MainWindow extends JFrame {
 		
 		if (reloadEditor)
 			EditorPane.loadText(MainWindow.parser.getText());
-		freshlyOpened = false;
 		
+		freshlyOpened = false;
 		Main.window.unsavedChanges(false);
 	}
 	
