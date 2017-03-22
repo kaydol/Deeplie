@@ -1,18 +1,19 @@
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeMap;
 
 public class Node {
 
 	private String label;
-	private List<String> content;
+	private TreeMap<Integer, String> content;
 	private List<Node> fathers;
 	private List<Node> children;
 	private Point2D position;
 	private int drawcount;
 	
-	public Node(String label, List<String> content) {
-		setLabel(label);
+	public Node(TreeMap<Integer, String> content) {
+		setLabel(content.firstEntry().getValue());
 		setContent(content);
 		children = new ArrayList<Node>();
 		fathers = new ArrayList<Node>();
@@ -73,11 +74,11 @@ public class Node {
 		this.label = label;
 	}
 
-	public List<String> getContent() {
+	public TreeMap<Integer, String> getContent() {
 		return content;
 	}
 
-	public void setContent(List<String> content) {
+	public void setContent(TreeMap<Integer, String> content) {
 		this.content = content;
 	}
 

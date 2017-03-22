@@ -25,6 +25,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextPane;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.TransferHandler;
@@ -45,7 +46,7 @@ public class MainWindow extends JFrame {
 	public static AdvancedWindow advancedWindow;
 	public static CommandsWindow commandsWindow;
 	public static Parser parser = new Parser();
-	
+	public static JTextArea errorDescription;
 	
 	private static FileNameExtensionFilter filter = new FileNameExtensionFilter("pscript file (.pscript .txt)", "pscript", "txt");
 	
@@ -56,8 +57,8 @@ public class MainWindow extends JFrame {
 	public static String ProgramName = "LoE .pscript Visualiser “Deeplie”";
 	public static Font menuFont = new Font("Verdana", Font.PLAIN, 12);
 	public static Font consoleFont = new Font("Verdana", Font.PLAIN, 13);
+	public static TextLineNumber EditorPane;
 	
-	private static TextEditorPane EditorPane;
 	private static boolean freshlyOpened = true; 
 	private static boolean unsavedChanges = false;
 	
@@ -101,14 +102,28 @@ public class MainWindow extends JFrame {
     	
     	//JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, canvasHolder, consoleScrollpane);
     	
-    	EditorPane = new TextEditorPane();
+    	JTextPane textPane = new JTextPane();
+    	JScrollPane scrollPane = new JScrollPane(textPane);
+    	EditorPane = new TextLineNumber(textPane);
+    	scrollPane.setRowHeaderView( EditorPane );
+    	JPanel EditorWrap = new JPanel(new BorderLayout());
+    	EditorWrap.add(scrollPane, BorderLayout.CENTER);
+		errorDescription = new JTextArea();
+		errorDescription.setBorder(BorderFactory.createEmptyBorder(15, 0, 0, 0));
+		errorDescription.setFont(MainWindow.consoleFont);
+		errorDescription.setEditable(false);
+		errorDescription.setOpaque(false);
+		errorDescription.setRows(1);
+		EditorWrap.add(errorDescription, BorderLayout.SOUTH);
+		EditorWrap.setBorder(outer);
+		
     	ImageIcon editorIcon = new ImageIcon(new ImageIcon("application_edit.png").getImage().getScaledInstance(16, 16, Image.SCALE_DEFAULT));
     	ImageIcon consoleIcon = new ImageIcon(new ImageIcon("application_xp_terminal.png").getImage().getScaledInstance(16, 16, Image.SCALE_DEFAULT));
     	ImageIcon canvasIcon = new ImageIcon(new ImageIcon("canvas.png").getImage().getScaledInstance(16, 16, Image.SCALE_DEFAULT));
     	
     	tabbedPane = new JTabbedPane();
     	tabbedPane.setFont(menuFont);
-    	tabbedPane.addTab("Text Editor", editorIcon, EditorPane);
+    	tabbedPane.addTab("Text Editor", editorIcon, EditorWrap);
     	tabbedPane.addTab("Canvas", canvasIcon, canvasHolder);
     	tabbedPane.addTab("Console", consoleIcon, consoleScrollpane);
     	background.add(tabbedPane, BorderLayout.CENTER);
@@ -164,6 +179,8 @@ public class MainWindow extends JFrame {
 			for (String s : parser.Errors.get(i))
 				pushToLog(i, s);
 		}
+		pushToLog(-1, "");
+		
 		
 		SwingUtilities.invokeLater(new Runnable() {
 		    public void run() {
@@ -207,6 +224,21 @@ public class MainWindow extends JFrame {
         JMenu fileMenu = new JMenu("File");
         fileMenu.setFont(menuFont);
         
+        JMenuItem item_newFile = new JMenuItem("Create new file ");
+        item_newFile.setFont(menuFont);
+        fileMenu.add(item_newFile);
+        item_newFile.addActionListener(new ActionListener() {           
+	            public void actionPerformed(ActionEvent e) {
+	            	LastLoadedFile = null;
+	            	freshlyOpened = true;
+	            	parser.clearData();
+	            	EditorPane.clearData();
+	            	updateState(false);
+	            }           
+	        });
+        item_newFile.setAccelerator(KeyStroke.getKeyStroke("control N"));
+        
+        
         JMenuItem item_loadFile = new JMenuItem("Load .pscript file ");
         item_loadFile.setFont(menuFont);
         fileMenu.add(item_loadFile);
@@ -234,7 +266,7 @@ public class MainWindow extends JFrame {
 	        });
         item_loadFile.setAccelerator(KeyStroke.getKeyStroke("control L"));
         
-        JMenuItem item_reloadFile = new JMenuItem("Reload file ");
+        JMenuItem item_reloadFile = new JMenuItem("Reload file from drive");
         item_reloadFile.setFont(menuFont);
         fileMenu.add(item_reloadFile);
         item_reloadFile.addActionListener(new ActionListener() {           
@@ -258,15 +290,27 @@ public class MainWindow extends JFrame {
 	        });
         item_reloadFile.setAccelerator(KeyStroke.getKeyStroke("control R"));
         
-        JMenuItem item_saveToFile = new JMenuItem("Save file ");
+        JMenuItem item_saveToFile = new JMenuItem("Save file to drive");
         item_saveToFile.setFont(MainWindow.menuFont);
         fileMenu.add(item_saveToFile);
         item_saveToFile.addActionListener(new ActionListener() {           
 	            public void actionPerformed(ActionEvent e) {
-	            	if (LastLoadedFile != null) {
-	            		EditorPane.writeToFile();
-	            		((MainWindow) EditorPane.getTopLevelAncestor()).unsavedChanges(false);
+	            	if (LastLoadedFile == null) {
+	            		JFileChooser filecreate = new JFileChooser();
+	            		filecreate.setCurrentDirectory(new File(System.getProperty("user.dir")));
+	            		filecreate.setFileFilter(filter);
+		            	int ret = filecreate.showDialog(null, "Create .pscript file");                
+		                if (ret == JFileChooser.APPROVE_OPTION) {
+		                    File file = filecreate.getSelectedFile();
+		                    if (!file.exists()) {
+	                			LastLoadedFile = file;
+	                			updateState(true);
+		                    } else
+		                    	pushToLog(-1, "Terminating: File '" + file.getName() + "' already exists");
+		                }
 	            	}
+	            	EditorPane.writeToFile();
+	            	Main.window.unsavedChanges(false);		            
 	            }
 	        });
         item_saveToFile.setAccelerator(KeyStroke.getKeyStroke("control S"));
@@ -279,10 +323,6 @@ public class MainWindow extends JFrame {
         advancedMenu.add(item_openAdvanced);
         item_openAdvanced.addActionListener(new ActionListener() {           
 	            public void actionPerformed(ActionEvent e) {
-	            	if (LastLoadedFile == null) {
-	            		pushToLog(-1, "Terminating: You didn't load any files yet, nothing to edit");
-	            		return;
-	            	}
 	            	if (advancedWindow == null) {
 	            		advancedWindow = new AdvancedWindow();	
 	            		return;
@@ -335,6 +375,10 @@ public class MainWindow extends JFrame {
 	}
 	
 	public void unsavedChanges(boolean b) {
+		if (LastLoadedFile == null) {
+			Main.window.setTitle(ProgramName);
+			return;
+		}
 		if (freshlyOpened) {
 			Main.window.setTitle(ProgramName + " | " + LastLoadedFile.getName());
 			return;
@@ -343,6 +387,7 @@ public class MainWindow extends JFrame {
 			return;
 		
 		unsavedChanges = b;
+		
 		if (b)
 			setTitle(ProgramName + " | *" + LastLoadedFile.getName()); 	//  File has unsaved changes
 		else 

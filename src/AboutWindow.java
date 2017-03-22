@@ -99,7 +99,7 @@ public class AboutWindow extends JFrame {
 		
 		pushToBox(leftTextBox, "LoE .pscript Visualiser “Deeplie”");
 		pushToBox(leftTextBox, "Creator: Fess#2162");
-		pushToBox(leftTextBox, "Version: 2.0"); 
+		pushToBox(leftTextBox, "Version: 2.03"); 
 		pushToBox(leftTextBox, ""); 
 		pushToBox(leftTextBox, "LoE Script Implementation DEP"); 
 		

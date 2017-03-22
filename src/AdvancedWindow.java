@@ -8,10 +8,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.List;
 
 import javax.swing.BorderFactory;
@@ -67,15 +63,8 @@ public class AdvancedWindow extends JFrame {
 		commitButton.addActionListener(new ActionListener() {           
             public void actionPerformed(ActionEvent e) {
             
-            	List<String> text;
-				try {
-					text = Files.readAllLines(MainWindow.LastLoadedFile.toPath(), Charset.forName("UTF-8"));
-				} catch (IOException e1) {
-					MainWindow.pushToLog(-1, "Terminating: Make sure the file exists and uses UTF-8 encoding");
-					e1.printStackTrace();
-					return;
-				}
-            	
+            	List<String> text = MainWindow.EditorPane.getEditorContent();
+				
             	for (int i = 0; i < text.size(); ++i) {
             		String s = text.get(i).trim();
             		if (s.isEmpty())
@@ -110,21 +99,9 @@ public class AdvancedWindow extends JFrame {
             		text.set(i, s);
             	}
             	
-            	try {
-					Files.write(MainWindow.LastLoadedFile.toPath(), text, StandardCharsets.UTF_8);
-				} catch (IOException e1) {
-					MainWindow.pushToLog(-1, "Terminating: Error while writing to file");
-					e1.printStackTrace();
-				}
+            	MainWindow.EditorPane.loadText(text);
+            	((MainWindow) MainWindow.EditorPane.getTopLevelAncestor()).unsavedChanges(true);
             	
-            	try {
-					MainWindow.parser.readFromFile(MainWindow.LastLoadedFile.getPath());
-					MainWindow.updateState(true);
-				}
-            	catch (IOException e1) {
-					MainWindow.pushToLog(-1, "Terminating: Error while reloading the file");
-					e1.printStackTrace();
-				}
             }           
         });
 		
