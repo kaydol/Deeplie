@@ -2,7 +2,6 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
@@ -27,6 +26,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextPane;
 import javax.swing.KeyStroke;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.TransferHandler;
 import javax.swing.border.Border;
@@ -56,7 +56,7 @@ public class MainWindow extends JFrame {
 	public static String prefix_terminating = "";
 	public static String ProgramName = "LoE .pscript Visualiser “Deeplie”";
 	public static Font menuFont = new Font("Verdana", Font.PLAIN, 12);
-	public static Font consoleFont = new Font("Verdana", Font.PLAIN, 13);
+	public static Font consoleFont = new Font("Courier New", Font.PLAIN, 15);
 	public static TextLineNumber EditorPane;
 	
 	private static boolean freshlyOpened = true; 
@@ -106,6 +106,8 @@ public class MainWindow extends JFrame {
     	JScrollPane scrollPane = new JScrollPane(textPane);
     	EditorPane = new TextLineNumber(textPane);
     	scrollPane.setRowHeaderView( EditorPane );
+    	scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+    	
     	JPanel EditorWrap = new JPanel(new BorderLayout());
     	EditorWrap.add(scrollPane, BorderLayout.CENTER);
 		errorDescription = new JTextArea();
@@ -117,9 +119,9 @@ public class MainWindow extends JFrame {
 		EditorWrap.add(errorDescription, BorderLayout.SOUTH);
 		EditorWrap.setBorder(outer);
 		
-    	ImageIcon editorIcon = new ImageIcon(new ImageIcon("application_edit.png").getImage().getScaledInstance(16, 16, Image.SCALE_DEFAULT));
-    	ImageIcon consoleIcon = new ImageIcon(new ImageIcon("application_xp_terminal.png").getImage().getScaledInstance(16, 16, Image.SCALE_DEFAULT));
-    	ImageIcon canvasIcon = new ImageIcon(new ImageIcon("canvas.png").getImage().getScaledInstance(16, 16, Image.SCALE_DEFAULT));
+    	ImageIcon editorIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("application_edit.png")));
+    	ImageIcon consoleIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("application_xp_terminal.png")));
+    	ImageIcon canvasIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("canvas.png")));
     	
     	tabbedPane = new JTabbedPane();
     	tabbedPane.setFont(menuFont);
@@ -199,11 +201,13 @@ public class MainWindow extends JFrame {
 		if (canvas.isShowing())
 			canvas.repaintCanvas(); 
 		
-		if (reloadEditor)
+		if (reloadEditor) {
 			EditorPane.loadText(MainWindow.parser.getText());
+			Main.window.unsavedChanges(false);
+		}
 		
 		freshlyOpened = false;
-		Main.window.unsavedChanges(false);
+		
 	}
 	
 	public static void pushToLog(int lineNumber, String msg) {

@@ -397,10 +397,12 @@ public class Parser {
 		Log.add("Info: mentioned QuestIDs = " + temp.substring(0, temp.length() - 2));
 		
 		// TODO make a more comfortable way to show this information + change Activated_Objectives to LinkedHashSet to save the order of tasks
-		//temp = "";
-		//for (String s: Activated_Objectives)
-		//	temp += s + ", ";
-		//MainWindow.pushToLog("Info: mentioned Objectives = " + temp.substring(0, temp.length() - 2));
+		temp = "";
+		for (String s: Activated_Objectives)
+			temp += s + ", ";
+		if (temp.length() == 0)
+			temp = "<Command activateobjective wasn't used>  ";
+		Log.add("Info: mentioned Tasks = " + temp.substring(0, temp.length() - 2));
 		
 		temp = "";
 		for (int k: Quest_Stages)
@@ -461,7 +463,7 @@ public class Parser {
 			{
 				String s = node.getContent().get(i).trim();
 				s = s.replaceAll("goto ", ":"); // this is for catching <* goto Label> commands
-				if (s.matches(".+:\\w+$")) {
+				if (!s.startsWith("#") && s.matches(".+:\\w+$")) {
 					// Most likely we reached a label here
 					String[] arr = s.split(":");
 					label = arr[arr.length - 1];

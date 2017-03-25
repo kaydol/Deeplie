@@ -59,7 +59,7 @@ public class TextLineNumber extends JPanel implements CaretListener, DocumentLis
 	private HashMap<String, FontMetrics> fonts;
 	private int imageSize = 16;
 	private int imageSpacing = 5;
-	private ImageIcon errorIcon = new ImageIcon(new ImageIcon("attention.png").getImage().getScaledInstance(imageSize, imageSize, Image.SCALE_DEFAULT));
+	private ImageIcon errorIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("application_edit.png")).getScaledInstance(imageSize, imageSize, Image.SCALE_DEFAULT));
 	private Timer parsingTimer;
 	
 	/**
