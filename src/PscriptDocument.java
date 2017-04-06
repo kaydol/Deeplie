@@ -47,6 +47,9 @@ public class PscriptDocument extends DefaultStyledDocument  {
 	        Syntax pscript = new Syntax();
 	        for (Command c : pscript.commands)
 	        	keywords.add(c.getName());
+	        
+	        keywords.add("$Playerrace");
+	        keywords.add("$PLAYERRACE");
 	        keywords.add("$PLAYERNAME");
 	        keywords.add("BEGINNING");
 	        keywords.add("END");
@@ -66,8 +69,8 @@ public class PscriptDocument extends DefaultStyledDocument  {
 	     */
 	    public void remove(int offset, int length) throws BadLocationException
 	    {
-	        super.remove(offset, length);
-	        processChangedLines(offset, 0);
+	    	super.remove(offset, length);
+	    	processChangedLines(offset, 0);
 	    }
 
 	    /*

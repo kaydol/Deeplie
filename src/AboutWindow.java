@@ -68,12 +68,11 @@ public class AboutWindow extends JFrame {
 		pushToBox(rightTextBox, "~ You can drag & drop .pscript files into the program window to open them quickly");
 		pushToBox(rightTextBox, "~ Use RightMouseButton and MouseWheel for navigating in Canvas");
 		pushToBox(rightTextBox, "~ You can move trees in Canvas by dragging red nodes with LeftMouseButton");
-		pushToBox(rightTextBox, "~ You can auto-correct some of the common mistakes in `Advanced > Advanced editing` menu.");
 		
 		pushToBox(rightTextBox, "");
 		pushToBox(rightTextBox, "___ Send your feedback ___");
 		pushToBox(rightTextBox, "");
-		pushToBox(rightTextBox, "My Discord is on the left, see `Creator` line. Please, send me your feedback, questions and ideas, and undetected mistakes.");
+		pushToBox(rightTextBox, "My Discord is on the left, see `Creator` line. Please, send me your feedback, questions, ideas, and undetected mistakes.");
 		pushToBox(rightTextBox, "");
 		pushToBox(rightTextBox, "Before using the program, make sure you're having the latest version. Also, make sure the file has the `UTF-8` (without BOM) encoding.");
 		
@@ -99,7 +98,7 @@ public class AboutWindow extends JFrame {
 		
 		pushToBox(leftTextBox, "LoE .pscript Visualiser “Deeplie”");
 		pushToBox(leftTextBox, "Creator: Fess#2162");
-		pushToBox(leftTextBox, "Version: 2.05"); 
+		pushToBox(leftTextBox, "Version: 2.06"); 
 		pushToBox(leftTextBox, ""); 
 		pushToBox(leftTextBox, "LoE Script Implementation DEP"); 
 		

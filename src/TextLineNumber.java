@@ -14,6 +14,7 @@ import javax.swing.border.*;
 import javax.swing.event.*;
 import javax.swing.text.*;
 import javax.swing.text.DefaultHighlighter.DefaultHighlightPainter;
+import javax.swing.undo.UndoManager;
 
 /**
  *  This class will display line numbers for a related text component. The text
@@ -32,6 +33,7 @@ public class TextLineNumber extends JPanel implements CaretListener, DocumentLis
 	public final static float CENTER = 0.5f;
 	public final static float RIGHT = 1.0f;
 
+	private final static Color lineHighlightingColor = new Color(232,223,255);
 	private final static Border OUTER = new MatteBorder(0, 0, 0, 2, Color.GRAY);
 
 	private final static int HEIGHT = Integer.MAX_VALUE - 1000000;
@@ -58,9 +60,13 @@ public class TextLineNumber extends JPanel implements CaretListener, DocumentLis
 
 	private HashMap<String, FontMetrics> fonts;
 	private int imageSize = 16;
-	private int imageSpacing = 5;
-	private ImageIcon errorIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("application_edit.png")).getScaledInstance(imageSize, imageSize, Image.SCALE_DEFAULT));
-	private Timer parsingTimer;
+	private int imageSpacing = 10;
+	private ImageIcon errorIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("attention.png")).getScaledInstance(imageSize, imageSize, Image.SCALE_DEFAULT));
+	private ImageIcon todoIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("todo.png")).getScaledInstance(imageSize, imageSize, Image.SCALE_DEFAULT));
+	private Object highlightTag = null;
+	public UndoManager undoManager;
+	public RedoAction redoAction;
+	public UndoAction undoAction;
 	
 	/**
 	 *	Create a line number component for a text component. This minimum
@@ -96,13 +102,20 @@ public class TextLineNumber extends JPanel implements CaretListener, DocumentLis
 		setDigitAlignment( RIGHT );
 		setMinimumDisplayDigits( minimumDisplayDigits );
 		
-		parsingTimer = new Timer(1500, new ActionListener() {
+		Timer parsingTimer = new Timer(1500, new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				MainWindow.parser.setText(getEditorContent());
 				MainWindow.updateState(false);
 				if (panel.isShowing())
 					panel.repaint();
+				
+				try {
+					int line = getLineOfOffset(component, component.getCaret().getDot());
+					updateErrorMessage(line);
+				} catch (BadLocationException e) {
+					e.printStackTrace();
+				}
 			}
 		});
 		parsingTimer.setRepeats(false);
@@ -126,7 +139,7 @@ public class TextLineNumber extends JPanel implements CaretListener, DocumentLis
 		});
 		
 		DefaultHighlighter contentHL = new DefaultHighlighter();
-		DefaultHighlightPainter contentPainter = new DefaultHighlighter.DefaultHighlightPainter(Color.LIGHT_GRAY);
+		DefaultHighlightPainter contentPainter = new DefaultHighlighter.DefaultHighlightPainter(lineHighlightingColor);
 		
 		component.setHighlighter(contentHL);
 		component.setDocument(doc);
@@ -137,27 +150,20 @@ public class TextLineNumber extends JPanel implements CaretListener, DocumentLis
 			@Override
 			public void caretUpdate(CaretEvent e) {
 				int dot = e.getDot();
-			  	try {
+				try {
 					int line = getLineOfOffset(component, dot);
-					//int positionInLine = dot - getLineStartOffset(content, line);
+					updateErrorMessage(line);
 					
-					Document doc = component.getDocument();
+				  	//int positionInLine = dot - getLineStartOffset(content, line);
 					Element Line = doc.getDefaultRootElement().getElement(line);
 					//int length = Line.getEndOffset() - Line.getStartOffset();
 					
-					contentHL.removeAllHighlights();
-					
-					if (Line != null) {
-						contentHL.addHighlight(Line.getStartOffset(), Line.getEndOffset(), contentPainter);
-						String errorSum = "";
-						
-						// line + 1 is because we store lines from 0, but we count them from 1 in JTextPane
-						if (MainWindow.parser.Errors.containsKey(line + 1))
-							for (String errorMsg : MainWindow.parser.Errors.get(line + 1))
-								errorSum += errorMsg + " ";
-						
-						MainWindow.errorDescription.setText(errorSum);
+					if (highlightTag != null) {
+						contentHL.removeHighlight(highlightTag);
+						highlightTag = null;
 					}
+					if (Line != null)
+						highlightTag = contentHL.addHighlight(Line.getStartOffset(), Line.getEndOffset(), contentPainter);
 					
 				} catch (BadLocationException e1) {
 					e1.printStackTrace();
@@ -166,8 +172,47 @@ public class TextLineNumber extends JPanel implements CaretListener, DocumentLis
 			}
 		});
 
+		undoManager = new UndoManager();
+		undoManager.setLimit(-1);
+		
+		KeyStroke undoKeystroke = KeyStroke.getKeyStroke("control Z");
+		KeyStroke redoKeystroke = KeyStroke.getKeyStroke("control Y");
+
+		undoAction = new UndoAction();
+		component.getInputMap().put(undoKeystroke, "undoKeystroke");
+		component.getActionMap().put("undoKeystroke", undoAction);
+
+		redoAction = new RedoAction();
+		component.getInputMap().put(redoKeystroke, "redoKeystroke");
+		component.getActionMap().put("redoKeystroke", redoAction);
+		
+		
+		try {
+			doc.addUndoableEditListener(new UndoableEditListener()
+            {
+				public void undoableEditHappened(UndoableEditEvent evt)
+				{
+					if (!evt.getEdit().getPresentationName().equals("style change")) {
+						undoManager.addEdit(evt.getEdit());
+						MainWindow.refreshControls();
+					};
+				}
+            });
+        }
+		catch(Exception e) { 
+			e.printStackTrace();
+		}
+		
 	}
 
+	private void updateErrorMessage(int line) {
+		String errorSum = "";
+		if (MainWindow.parser.Errors.containsKey(line + 1))
+				for (String errorMsg : MainWindow.parser.Errors.get(line + 1))
+					errorSum += errorMsg + " ";
+			MainWindow.errorDescription.setText(errorSum);
+	}
+	
 	/**
 	 *  Gets the update font property
 	 *
@@ -351,6 +396,8 @@ public class TextLineNumber extends JPanel implements CaretListener, DocumentLis
     			//  Draw error icon
     			if (lineNumber.length() > 0) {
     				int num = Integer.parseInt(lineNumber);
+    				if (MainWindow.parser.ToDos.containsKey(num))
+    					g.drawImage(todoIcon.getImage(), x - imageSize - imageSpacing, y - imageSize + 4, null);
     				if (MainWindow.parser.Errors.containsKey(num))
     					g.drawImage(errorIcon.getImage(), x - imageSize - imageSpacing, y - imageSize + 4, null);
     			}
@@ -624,4 +671,67 @@ public class TextLineNumber extends JPanel implements CaretListener, DocumentLis
 	public void clearData() {
 		component.setText("");
 	}
+	
+	class UndoAction extends AbstractAction {
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = -2789929026786218442L;
+		
+		public UndoAction() {
+			super("Undo");
+			setEnabled(false);
+		}
+
+		public void actionPerformed(ActionEvent e) {
+			if (undoManager.canUndo())
+				undoManager.undo();
+			if (undoManager.canUndo())
+				undoManager.undo();
+			update();
+			redoAction.update();
+		}
+
+		protected void update() {
+			if (undoManager.canUndo()) {
+				setEnabled(true);
+				putValue(Action.NAME, undoManager.getUndoPresentationName());
+			} else {
+				setEnabled(false);
+				putValue(Action.NAME, "Undo");
+			}
+		}
+	}
+
+	class RedoAction extends AbstractAction {
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = -8394956411255750847L;
+		
+		public RedoAction() {
+			super("Redo");
+			setEnabled(false);
+		}
+
+		public void actionPerformed(ActionEvent e) {
+			if (undoManager.canRedo())
+				undoManager.redo();
+			if (undoManager.canRedo())
+				undoManager.redo();
+			update();
+			undoAction.update();
+		}
+
+		protected void update() {
+			if (undoManager.canRedo()) {
+				setEnabled(true);
+				putValue(Action.NAME, undoManager.getRedoPresentationName());
+			} else {
+				setEnabled(false);
+				putValue(Action.NAME, "Redo");
+			}
+		}
+	}
+	
 }

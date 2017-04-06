@@ -28,7 +28,7 @@ public class CommandsWindow extends JFrame {
             @Override
             public void windowClosing(WindowEvent e) {
                 dispose();
-                MainWindow.advancedWindow = null;
+                MainWindow.replaceWindow = null;
             }
         };
         addWindowListener(exitListener);

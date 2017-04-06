@@ -9,33 +9,32 @@ public class Command {
 	private String commandName;
 	private String[] examples;
 	
+	public Command(String commandName, String pattern, String[] examples) {
+		this(commandName, Pattern.compile(pattern), examples);
+	}
+	public Command(String commandName, String[] patterns, String[] examples) {
+		this(commandName, toPatternList(patterns), examples);
+	}
 	public Command(String commandName, Pattern pattern, String[] examples) {
-		setName(commandName);
-		setExamples(examples);
-		setConditionality(commandName);
-		patterns = new ArrayList<Pattern>();
-		patterns.add(pattern);
+		this(commandName, toPatternList(pattern), examples);
 	}
 	public Command(String commandName, List<Pattern> patterns, String[] examples) {
 		setName(commandName);
 		setExamples(examples);
 		setConditionality(commandName);
-		this.patterns = patterns;
+		setPatterns(patterns);
 	}
-	public Command(String commandName, String[] patterns, String[] examples) {
-		setName(commandName);
-		setExamples(examples);
-		setConditionality(commandName);
-		this.patterns = new ArrayList<Pattern>();
+	
+	private static List<Pattern> toPatternList(String[] patterns) {
+		List<Pattern> pats = new ArrayList<Pattern>();
 		for (String p: patterns)
-			this.patterns.add(Pattern.compile(p));
+			pats.add(Pattern.compile(p));
+		return pats;
 	}
-	public Command(String commandName, String pattern, String[] examples) {
-		setName(commandName);
-		setExamples(examples);
-		setConditionality(commandName);
-		patterns = new ArrayList<Pattern>();
-		patterns.add(Pattern.compile(pattern));
+	private static List<Pattern> toPatternList(Pattern pattern) {
+		List<Pattern> pats = new ArrayList<Pattern>();
+		pats.add(pattern);
+		return pats;
 	}
 	
 	public void addPattern(Pattern p) {
@@ -74,6 +73,12 @@ public class Command {
 	}
 	public void setExamples(String[] examples) {
 		this.examples = examples;
+	}
+	public void setPatterns(List<Pattern> patterns) {
+		this.patterns = patterns;
+	}
+	public boolean hasArguments() {
+		return patterns != null;
 	}
 	public boolean hasExamples() {
 		return examples != null;

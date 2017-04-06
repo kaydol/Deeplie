@@ -43,7 +43,7 @@ public class Syntax {
 		commands.add(new Command("israce?", new String[] {"<Pegasus>", "<Unicorn>", "<Earth>"}, new String[] {"* israce? <[Pegasus|Unicorn|Earth]> :LabelName"}));
 		commands.add(new Command("isage?", new String[] {"<Colt>", "<Stallion>", "<Filly>", "<Mare>"}, new String[] {"* isage? <[Colt|Stallion|Filly|Mare]> :LabelName"}));
 		
-		commands.add(new Command("f", new String[] {"ChangeRoom\\(\\w+\\)", "PlaySound\\(.+\\)", "TeleportTo\\(.+\\)", "Announce\\(.+\\)"}, new String[] {"* f ChangeRoom(Cantermore)", "* f PlaySound(SFX/Level_Up_TM_SFX)", "* f TeleportTo(position->\"-323, 45, -22.9\")", "* f TeleportTo(npcs->Wellington)", "* f Announce(Some years later...)"}));
+		commands.add(new Command("f", new String[] {"ChangeRoom\\(\\w+\\)", "PlaySound\\(.+\\)", "TeleportTo\\(.+\\)", "Announce\\(.+\\)", "GiveItem\\(.+\\)"}, new String[] {"* f ChangeRoom(Cantermore)", "* f PlaySound(SFX/Level_Up_TM_SFX)", "* f TeleportTo(position->\"-323, 45, -22.9\")", "* f TeleportTo(npcs->Wellington)", "* f TeleportTo(rooms->DevPlayground->position->\"180.1, 168.1, 400.4\")", "* f Announce(Some years later...)", "* f GiveItem(itemID, amount [, COLOR1, COLOR2])", "* f GiveItem(itemID, amount, AA0FFB)", "* f GiveItem(itemID, amount, FF0000, 0000FF)"}));
 		
 		commands.add(new Command("playsound", new String[] {"(\\w+\\/)*(\\w+)"}, new String[] {"* playsound Music/All/Battle_Boss", "* playsound SFX/Chicken_Pain03"}));
 		

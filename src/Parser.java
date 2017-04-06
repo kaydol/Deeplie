@@ -23,7 +23,7 @@ public class Parser {
 	private HashSet<String> DefinedLabels = new HashSet<String>();
 	private HashSet<String> Activated_QuestIDs = new HashSet<String>();
 	private HashSet<String> Completed_QuestIDs = new HashSet<String>();
-	private HashSet<String> Activated_Objectives = new HashSet<String>();
+	private HashSet<String> Activated_Objectives = new LinkedHashSet<String>();
 	private HashSet<String> Completed_Objectives = new HashSet<String>();
 	private LinkedHashSet<Integer> Quest_Stages = new LinkedHashSet<Integer>();
 	private LinkedHashSet<String> Quest_IDs = new LinkedHashSet<String>();
@@ -32,6 +32,8 @@ public class Parser {
 	private Pattern ValidSpeechName, ValidSpeechText, ValidCommand, ValidCondition, ValidLabel;
 	
 	public TreeMap<Integer, List<String>> Errors =  new TreeMap<Integer, List<String>>();
+	public TreeMap<Integer, String> ToDos = new TreeMap<Integer, String>();
+	
 	public List<String> Log = new ArrayList<String>();
 	
 	public Parser() {
@@ -75,13 +77,8 @@ public class Parser {
 			return;
 		}
 		
-		clearData();
 		List<String> text = Files.readAllLines(file.toPath(), Charset.forName("UTF-8"));
-		
-		textWithLines = addLinesToText(text);
-		
-		buildTree();
-		performAnalysis();
+		setText(text);
 	}
 	
 	public void setText(List<String> text) {
@@ -108,10 +105,12 @@ public class Parser {
 		// This message repeats a lot, so I put in a variable
 		String errInappropriateSymbol = "Error: inappropriate symbol(s)";
 		
-
 		for (int lineNumber : textWithLines.keySet()) {
 			
 			str = textWithLines.get(lineNumber).trim();
+			
+			if (str.matches("#\\s*TODO.*"))
+				ToDos.put(lineNumber, str);
 			
 			// Saving the current label to allow aliasname only before the first label
 			String currentLabel = "";
@@ -581,7 +580,15 @@ public class Parser {
 			if (pscript.commandExists(command)) 
 			{
 				Command c = pscript.findCommand(command);
-				String args = exp.substring(exp.indexOf(' '), exp.length()).trim();
+				if (c.hasArguments() && exp.indexOf(' ') == -1) {
+					addError(lineNumber, "Error: command '" + command + "' requires argument(s)");
+					return false;
+				}
+				
+				String args = "";
+				if (exp.contains(" "))
+					args = exp.substring(exp.indexOf(' '), exp.length()).trim();
+					
 				if (!c.isConditional() && isConditional) {
 					addError(lineNumber, "Error: command '" + command + "' is not suitable for using in conditional response");
 					return false;

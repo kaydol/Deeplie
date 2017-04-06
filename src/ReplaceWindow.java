@@ -18,18 +18,18 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.Border;
 
-public class AdvancedWindow extends JFrame {
+public class ReplaceWindow extends JFrame {
 
 	private static final long serialVersionUID = 2715564227665762808L;
 
-	public AdvancedWindow() {
+	public ReplaceWindow() {
 		
-		super("Advanced Editing");
+		super("Quick fix");
 		WindowAdapter exitListener = new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
                 dispose();
-                MainWindow.advancedWindow = null;
+                MainWindow.replaceWindow = null;
             }
         };
         addWindowListener(exitListener);
@@ -105,7 +105,7 @@ public class AdvancedWindow extends JFrame {
             }           
         });
 		
-		background.add(new JLabel("Advanced editing"));
+		background.add(new JLabel("Select what you want to fix :"));
 		background.add(box_doubleSpace);
 		background.add(box_asteriskSpace);
 		background.add(box_speechSpace);

@@ -43,7 +43,7 @@ public class MainWindow extends JFrame {
 	
 	public static File LastLoadedFile;
 	public static AboutWindow aboutWindow;
-	public static AdvancedWindow advancedWindow;
+	public static ReplaceWindow replaceWindow;
 	public static CommandsWindow commandsWindow;
 	public static Parser parser = new Parser();
 	public static JTextArea errorDescription;
@@ -61,7 +61,7 @@ public class MainWindow extends JFrame {
 	
 	private static boolean freshlyOpened = true; 
 	private static boolean unsavedChanges = false;
-	
+	private static JMenuItem item_undo, item_redo;
 	
 	public MainWindow() {
 		
@@ -325,37 +325,32 @@ public class MainWindow extends JFrame {
 	        });
         item_saveToFile.setAccelerator(KeyStroke.getKeyStroke("control S"));
         
-        JMenu advancedMenu = new JMenu("Advanced");
+        JMenu advancedMenu = new JMenu("Edit");
         advancedMenu.setFont(menuFont);
         
-        JMenuItem item_openAdvanced = new JMenuItem("Advanced editing");
+        item_undo = new JMenuItem(EditorPane.undoAction);
+        item_undo.setFont(menuFont);
+        item_undo.setAccelerator(KeyStroke.getKeyStroke("control Z"));
+        advancedMenu.add(item_undo);
+        
+        item_redo = new JMenuItem(EditorPane.redoAction);
+        item_redo.setFont(menuFont);
+        item_redo.setAccelerator(KeyStroke.getKeyStroke("control Y"));
+        advancedMenu.add(item_redo);
+        
+        JMenuItem item_openAdvanced = new JMenuItem("Quick fix...");
         item_openAdvanced.setFont(menuFont);
         advancedMenu.add(item_openAdvanced);
         item_openAdvanced.addActionListener(new ActionListener() {           
 	            public void actionPerformed(ActionEvent e) {
-	            	if (advancedWindow == null) {
-	            		advancedWindow = new AdvancedWindow();	
+	            	if (replaceWindow == null) {
+	            		replaceWindow = new ReplaceWindow();	
 	            		return;
 	            	}
-	            	advancedWindow.setVisible(true);
-	            	advancedWindow.toFront(); 
+	            	replaceWindow.setVisible(true);
+	            	replaceWindow.toFront();
 	            }           
 	        });
-        
-        JMenuItem item_openCommands = new JMenuItem("Supported commands");
-        item_openCommands.setFont(menuFont);
-        advancedMenu.add(item_openCommands);
-        item_openCommands.addActionListener(new ActionListener() {           
-	            public void actionPerformed(ActionEvent e) {
-	            	if (commandsWindow == null) {
-	            		commandsWindow = new CommandsWindow();	
-	            		return;
-	            	}
-	            	commandsWindow.setVisible(true);
-	            	commandsWindow.toFront(); 
-	            }           
-	        });
-        
         
         JMenu aboutMenu = new JMenu("About");
         aboutMenu.setFont(menuFont);
@@ -372,7 +367,21 @@ public class MainWindow extends JFrame {
 	            	aboutWindow.toFront();
 	            }           
 	        });
-        
+        JMenuItem item_openCommands = new JMenuItem("Supported commands");
+        item_openCommands.setFont(menuFont);
+        aboutMenu.add(item_openCommands);
+        item_openCommands.addActionListener(new ActionListener() {           
+	            public void actionPerformed(ActionEvent e) {
+	            	if (commandsWindow == null) {
+	            		commandsWindow = new CommandsWindow();	
+	            		return;
+	            	}
+	            	commandsWindow.setVisible(true);
+	            	commandsWindow.toFront(); 
+	            }           
+	        });
+	        
+	        
         menuBar.add(fileMenu); 
         menuBar.add(advancedMenu); 
         menuBar.add(aboutMenu);
@@ -404,4 +413,9 @@ public class MainWindow extends JFrame {
 			setTitle(ProgramName + " | " + LastLoadedFile.getName()); 	//  File has no unsaved changes
 		
 	}
+	
+    public static void refreshControls() {
+    	item_undo.setEnabled(EditorPane.undoManager.canUndo());
+    	item_redo.setEnabled(EditorPane.undoManager.canRedo());
+    }
 }
