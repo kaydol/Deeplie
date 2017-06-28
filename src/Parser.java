@@ -13,6 +13,8 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.swing.JOptionPane;
+
 public class Parser {
 	
 	private HashMap<Integer, String> textWithLines;
@@ -56,6 +58,7 @@ public class Parser {
 		Completed_Objectives.clear();
 		Quest_Stages.clear();
 		Quest_IDs.clear();
+		MentionedNPCs.clear();
 	}
 	
 	public static HashMap<Integer, String> addLinesToText (List<String> text) {
@@ -73,7 +76,7 @@ public class Parser {
 		
 		File file = new File(filename);	
 		if (!file.exists()) {
-			addError(-1, "Error: no such file in directory '" + filename + "'");
+			JOptionPane.showMessageDialog(null, "No such file in directory '" + filename + "'", "Error", JOptionPane.ERROR_MESSAGE);
 			return;
 		}
 		
@@ -109,20 +112,23 @@ public class Parser {
 			
 			str = textWithLines.get(lineNumber).trim();
 			
-			if (str.matches("#\\s*TODO.*"))
+			if (str.matches(".*#\\s*TODO.*"))
 				ToDos.put(lineNumber, str);
+			
+			// Remove all comments from the line
+			str = str.replaceAll("#.*", "").trim();
 			
 			// Saving the current label to allow aliasname only before the first label
 			String currentLabel = "";
 			if (str.matches(ValidLabel.pattern()))
 				currentLabel = str;
 			
-			if (str.isEmpty() || str.startsWith("#"))
+			if (str.isEmpty())
 				continue;
 			
 			if (str.startsWith("*") && !str.matches("\\*" + ValidCommand.pattern())) {
 				
-				if (str.matches("\\*\\s*runscript .+") || str.matches("\\*\\s*f .+") || str.matches("\\*\\s*playsound .+")) {
+				if (str.matches("\\*\\s*runscript .+") || str.matches("\\*\\s*f .+") || str.matches("\\*\\s*playsound .+") || str.matches("\\*\\s*spawnmob .+")) {
 					// These commands may have some very rare symbols in their arguments, and I don't want to 
 					// add those very specific symbols into a common whitelist used by all other commands
 					// Instead, those symbols will be treated by the regular expression of those commands 
@@ -357,7 +363,7 @@ public class Parser {
 							NPC = true;
 							break;
 						}
-						if (s.isEmpty() || s.startsWith("#") || s.matches(ValidSpeechText.pattern())) // part of the speech or comment
+						if (s.isEmpty() || s.matches(ValidSpeechText.pattern())) // part of the speech or comment
 							continue;
 						break;
 					}
@@ -395,7 +401,7 @@ public class Parser {
 			temp = "<No QuestIDs found>  ";
 		Log.add("Info: mentioned QuestIDs = " + temp.substring(0, temp.length() - 2));
 		
-		// TODO make a more comfortable way to show this information + change Activated_Objectives to LinkedHashSet to save the order of tasks
+		// TODO make a more comfortable way to show this information?
 		temp = "";
 		for (String s: Activated_Objectives)
 			temp += s + ", ";
@@ -425,7 +431,8 @@ public class Parser {
 		for (int i = 1; i < textWithLines.size() + 1; ++i) {
 			String p = textWithLines.get(i);
 			++currentline;
-			p = p.trim();
+			// Removing comments in content of each node 
+			p = p.replaceAll("#.*", "").trim();
 			if (p.matches(ValidLabel.pattern()) || currentline == textWithLines.size()) {
 				// reached another node
 				if (label != null) {
@@ -442,6 +449,11 @@ public class Parser {
 				label = p;
 				if (DefinedLabels.contains(label))
 					addError(currentline, "Error: duplicate label name " + label);
+				if (label.equals("[BEGINNING]"))
+					addError(currentline, "Error: attempt to redefine [BEGINNING] label");
+				if (label.equals("[END]"))
+					addError(currentline, "Error: attempt to redefine [END] label");
+				
 				content = new TreeMap<Integer, String>();
 				content.put(currentline, label);
 			}
@@ -462,7 +474,7 @@ public class Parser {
 			{
 				String s = node.getContent().get(i).trim();
 				s = s.replaceAll("goto ", ":"); // this is for catching <* goto Label> commands
-				if (!s.startsWith("#") && s.matches(".+:\\w+$")) {
+				if (s.matches(".+:\\w+$")) {
 					// Most likely we reached a label here
 					String[] arr = s.split(":");
 					label = arr[arr.length - 1];
@@ -493,7 +505,7 @@ public class Parser {
 			for(int i : node.getContent().keySet()) 
 			{
 				String line = node.getContent().get(i).trim();
-				if (line.isEmpty() || line.startsWith("#")) 
+				if (line.isEmpty())
 					continue;
 				// seeking for either goto or reliable dialogue answer that will 100% lead us out of the current node
 				// dialogue answer must not contain conditional expression in order to be `reliable`, hehe
@@ -517,7 +529,7 @@ public class Parser {
 			{
 				String line = node.getContent().get(currentLine).trim();
 				
-				if (line.isEmpty() || line.startsWith("#")) 
+				if (line.isEmpty())
 					continue;
 				if (line.matches("^(\\* goto \\w+)|^>.+")) 
 				{

@@ -20,6 +20,7 @@ import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
@@ -53,7 +54,6 @@ public class MainWindow extends JFrame {
 	public static String prefix_error = "   ";
 	public static String prefix_example = "         ";
 	public static String prefix_info = "";
-	public static String prefix_terminating = "";
 	public static String ProgramName = "LoE .pscript Visualiser “Deeplie”";
 	public static Font menuFont = new Font("Verdana", Font.PLAIN, 12);
 	public static Font consoleFont = new Font("Courier New", Font.PLAIN, 15);
@@ -149,14 +149,14 @@ public class MainWindow extends JFrame {
 							updateState(true);
 						}
 						else 
-							pushToLog(-1, "Terminating: file should have either .txt or .pscript extension");
+							JOptionPane.showMessageDialog(null, "File should have either .txt or .pscript extension", "Terminated", JOptionPane.ERROR_MESSAGE);
 					}
 					if (files.size() > 1)
 						pushToLog(-1, "Info: when you drag & drop more than 1 files, only one is processed");
 					
 				} catch (UnsupportedFlavorException | IOException  e) {
-					pushToLog(-1, "Terminating: Make sure the file exists and uses UTF-8 encoding");
-					e.printStackTrace();
+					JOptionPane.showMessageDialog(null, "Make sure the file is in UTF-8 encoding", "Terminated", JOptionPane.ERROR_MESSAGE);
+        			//e.printStackTrace();
 				}
 				return true; 
 			}
@@ -212,8 +212,6 @@ public class MainWindow extends JFrame {
 	
 	public static void pushToLog(int lineNumber, String msg) {
 		
-		if (msg.trim().startsWith("Terminating:"))
-			msg = prefix_terminating + msg;
 		if (msg.trim().startsWith("Error:"))
 			msg = prefix_error + msg;
 		if (msg.trim().startsWith("Info:"))
@@ -266,39 +264,48 @@ public class MainWindow extends JFrame {
 	                			parser.readFromFile(LastLoadedFile.getAbsolutePath());
 								updateState(true);
 	                		} catch (IOException e1) {
-	                			pushToLog(-1, "Terminating: Make sure the file exists and uses UTF-8 encoding");
-	                			e1.printStackTrace();
+	                			JOptionPane.showMessageDialog(null, "Make sure the file is in UTF-8 encoding", "Terminated", JOptionPane.ERROR_MESSAGE);
+	                			//e1.printStackTrace();
 	                		}
 	                    } else
-	                    	pushToLog(-1, "Terminating: Input file '" + file.getName() + "' does not exist");
+	                    	JOptionPane.showMessageDialog(null, "Input file '" + file.getName() + "' does not exist", "Terminated", JOptionPane.ERROR_MESSAGE);
 	                }          
 	            }           
 	        });
         item_loadFile.setAccelerator(KeyStroke.getKeyStroke("control L"));
         
-        JMenuItem item_reloadFile = new JMenuItem("Reload file from drive");
+        JMenuItem item_reloadFile = new JMenuItem("Reload file from drive ");
         item_reloadFile.setFont(menuFont);
         fileMenu.add(item_reloadFile);
         item_reloadFile.addActionListener(new ActionListener() {           
 	            public void actionPerformed(ActionEvent e) {
 	            	if (LastLoadedFile == null) {
-	            		pushToLog(-1, prefix_terminating + "Terminating: You didn't load any files yet, nothing to reload");
+	            		JOptionPane.showMessageDialog(null, "You didn't load any files yet, nothing to reload", "CTRL+R", JOptionPane.INFORMATION_MESSAGE);
 	            		return;
 	            	}
 	            	if (LastLoadedFile.exists()) {
-                		try {
-                			parser.readFromFile(LastLoadedFile.getAbsolutePath());
-							updateState(true);
-                		} catch (IOException e1) {
-                			pushToLog(-1, "Terminating: Make sure the file exists and uses UTF-8 encoding");
-                			e1.printStackTrace();
-                			return;
-                		}
+	            		int response = JOptionPane.YES_OPTION;
+	            		if (unsavedChanges)
+	            			response = JOptionPane.showConfirmDialog(null, "Reload the file from hard drive?" + System.lineSeparator() + "You will lose all unsaved changes.", "Confirm", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+	            		if (response == JOptionPane.YES_OPTION) {
+                	    	try {
+                    			parser.readFromFile(LastLoadedFile.getAbsolutePath());
+    							updateState(true);
+                    		} catch (IOException e1) {
+                    			JOptionPane.showMessageDialog(null, "Make sure the file is in UTF-8 encoding", "Terminated", JOptionPane.ERROR_MESSAGE);
+                    			//e1.printStackTrace();
+                    			return;
+                    		}
+                	    	
+                	    } else
+                	    	return;
+	            		
                     } else
-                    	pushToLog(-1, "Terminating: Input file '" + LastLoadedFile.getName() + "' does not exist");      
+                    	JOptionPane.showMessageDialog(null, "Input file '" + LastLoadedFile.getName() + "' does not exist", "Terminated", JOptionPane.ERROR_MESSAGE);
 	            }
 	        });
         item_reloadFile.setAccelerator(KeyStroke.getKeyStroke("control R"));
+        
         
         JMenuItem item_saveToFile = new JMenuItem("Save file to drive");
         item_saveToFile.setFont(MainWindow.menuFont);
@@ -316,7 +323,7 @@ public class MainWindow extends JFrame {
 	                			LastLoadedFile = file;
 	                			updateState(true);
 		                    } else
-		                    	pushToLog(-1, "Terminating: File '" + file.getName() + "' already exists");
+		                    	JOptionPane.showMessageDialog(null, "File '" + file.getName() + "' already exists", "Terminated", JOptionPane.ERROR_MESSAGE);
 		                }
 	            	}
 	            	EditorPane.writeToFile();

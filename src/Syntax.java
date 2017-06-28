@@ -5,6 +5,7 @@ public class Syntax {
 
 	List<Command> commands;
 	public static String QuestID_pattern = "\\w+"; 
+	public static String Coordinate_pattern = "[-+]?\\d+(\\.\\d+)?"; // catches all floats and integers with optional +-
 	
 	public Syntax() {
 		
@@ -46,6 +47,8 @@ public class Syntax {
 		commands.add(new Command("f", new String[] {"ChangeRoom\\(\\w+\\)", "PlaySound\\(.+\\)", "TeleportTo\\(.+\\)", "Announce\\(.+\\)", "GiveItem\\(.+\\)"}, new String[] {"* f ChangeRoom(Cantermore)", "* f PlaySound(SFX/Level_Up_TM_SFX)", "* f TeleportTo(position->\"-323, 45, -22.9\")", "* f TeleportTo(npcs->Wellington)", "* f TeleportTo(rooms->DevPlayground->position->\"180.1, 168.1, 400.4\")", "* f Announce(Some years later...)", "* f GiveItem(itemID, amount [, COLOR1, COLOR2])", "* f GiveItem(itemID, amount, AA0FFB)", "* f GiveItem(itemID, amount, FF0000, 0000FF)"}));
 		
 		commands.add(new Command("playsound", new String[] {"(\\w+\\/)*(\\w+)"}, new String[] {"* playsound Music/All/Battle_Boss", "* playsound SFX/Chicken_Pain03"}));
+		
+		commands.add(new Command("spawnmob", new String[] {"(Birch Dryad|Bunny|Cockatrice|Corgi|Dragon|Hornet|Husky|Karkadann|Lantern Monster|Manticore|Naiad|Timberwolf)\\s*<(" + Coordinate_pattern + ",\\s*){6}[-+]?\\d+(\\.\\d+)?>\\s*\\d+"}, new String[] {"* spawnmob Dragon <51.676, 9.179, -56.765, 0.000, 0.494, 0.000, -0.870> 15", "* spawnmob MobName <posX, posY, posZ, rotationA, rotationB, rotationC, rotationD> LevelOfMob", "Supported mobs: Birch Dryad, Bunny, Cockatrice, Corgi, Dragon, Hornet, Husky, Karkadann, Lantern Monster, Manticore, Naiad, Timberwolf"}));
 		
 		
 	}

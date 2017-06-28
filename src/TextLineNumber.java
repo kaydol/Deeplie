@@ -192,10 +192,10 @@ public class TextLineNumber extends JPanel implements CaretListener, DocumentLis
             {
 				public void undoableEditHappened(UndoableEditEvent evt)
 				{
-					if (!evt.getEdit().getPresentationName().equals("style change")) {
+					//if (!evt.getEdit().getPresentationName().equals("style change")) {
 						undoManager.addEdit(evt.getEdit());
 						MainWindow.refreshControls();
-					};
+					//};
 				}
             });
         }
@@ -620,6 +620,7 @@ public class TextLineNumber extends JPanel implements CaretListener, DocumentLis
 		SwingUtilities.invokeLater(new Runnable() {
 		    public void run() {
 		    	contentScrollPane.getVerticalScrollBar().setValue(scrollBarPos);
+		    	
 		    }
 		});
 	}
