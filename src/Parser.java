@@ -34,8 +34,7 @@ public class Parser {
 	private Pattern ValidSpeechName, ValidSpeechText, ValidCommand, ValidCondition, ValidLabel;
 	
 	public TreeMap<Integer, List<String>> Errors =  new TreeMap<Integer, List<String>>();
-	public TreeMap<Integer, String> ToDos = new TreeMap<Integer, String>();
-	
+	public TreeMap<Integer, String> Notes = new TreeMap<Integer, String>();
 	public List<String> Log = new ArrayList<String>();
 	
 	public Parser() {
@@ -46,11 +45,13 @@ public class Parser {
 		ValidCondition = Pattern.compile("[\\w\\?\\s:<>=\\-\\|^&]+");
 		ValidLabel = Pattern.compile("^\\[\\w+\\]");
 		
+		textWithLines = new HashMap<Integer, String>();
 	}
 	
 	public void clearData() {
 		Log.clear();
 		Errors.clear();
+		Notes.clear();
 		DefinedLabels.clear();
 		Activated_QuestIDs.clear();
 		Completed_QuestIDs.clear();
@@ -72,7 +73,7 @@ public class Parser {
 	}
 	
 	
-	public void readFromFile(String filename) throws IOException {
+	public void readFromFile(String filename, String encoding) throws IOException {
 		
 		File file = new File(filename);	
 		if (!file.exists()) {
@@ -80,8 +81,9 @@ public class Parser {
 			return;
 		}
 		
-		List<String> text = Files.readAllLines(file.toPath(), Charset.forName("UTF-8"));
+		List<String> text = Files.readAllLines(file.toPath(), Charset.forName(encoding));
 		setText(text);
+		
 	}
 	
 	public void setText(List<String> text) {
@@ -113,7 +115,9 @@ public class Parser {
 			str = textWithLines.get(lineNumber).trim();
 			
 			if (str.matches(".*#\\s*TODO.*"))
-				ToDos.put(lineNumber, str);
+				Notes.put(lineNumber, "TODO");
+			if (str.matches(".*#\\s*NOTE.*"))
+				Notes.put(lineNumber, "NOTE");
 			
 			// Remove all comments from the line
 			str = str.replaceAll("#.*", "").trim();

@@ -17,7 +17,7 @@ public class PscriptDocument extends DefaultStyledDocument  {
 	
 	private DefaultStyledDocument doc;
 	    private Element rootElement;
-	    private MutableAttributeSet normal, keyword, comment, quote, errorline;
+	    private MutableAttributeSet normal, keyword, comment, quote, searchQuery, searchQueryNoBackground;
 	    private Set<String> keywords;
 
 	    public PscriptDocument() {
@@ -40,8 +40,12 @@ public class PscriptDocument extends DefaultStyledDocument  {
 	        quote = new SimpleAttributeSet();
 	        StyleConstants.setForeground(quote, Color.red);
 
-	        errorline = new SimpleAttributeSet();
-	        StyleConstants.setBackground(errorline, Color.red);
+	        searchQuery = new SimpleAttributeSet();
+	        StyleConstants.setBackground(searchQuery, new Color(155, 255, 155));
+	        
+	        searchQueryNoBackground = new SimpleAttributeSet();
+	        StyleConstants.setBackground(searchQueryNoBackground, new Color(255, 255, 255));
+	        
 	        
 	        keywords = new HashSet<String>();
 	        Syntax pscript = new Syntax();
@@ -217,6 +221,34 @@ public class PscriptDocument extends DefaultStyledDocument  {
 	    	if (opening.equals("["))
 	    		return "]";
 	    	return opening;
+	    }
+	    
+	    public void clearSearchQuery() {
+	    	try {
+	    		doc.setCharacterAttributes(0, doc.getLength(), searchQueryNoBackground, false);
+	    	} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+	    }
+	    
+	    public void highlightSearchQuery(String query) {
+	    	try {
+	    		String content = doc.getText(0, doc.getLength());
+				int currentIndex = 0;
+				
+				while (content.indexOf(query, currentIndex) > -1) {
+					currentIndex = content.indexOf(query, currentIndex);
+					doc.setCharacterAttributes(currentIndex, query.length(), searchQuery, false);
+					currentIndex += query.length();
+				}
+				
+			} catch (BadLocationException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+	    	
+	    	
 	    }
 	    
 }

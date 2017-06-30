@@ -69,7 +69,7 @@ public class CommandsWindow extends JFrame {
 				String text = "Examples:" + System.lineSeparator();
 				String[] desc = syntax.commands.get(list.getSelectedIndex()).getExamples();
 				for (String p : desc) {
-					text += MainWindow.prefix_error + p + System.lineSeparator();
+					text += "   " + p + System.lineSeparator();
 				}
 				commandDesc.setText(text);
 				

@@ -21,6 +21,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 
 public class AboutWindow extends JFrame {
@@ -58,7 +59,7 @@ public class AboutWindow extends JFrame {
 		rightTextBox.setDisabledTextColor(Color.BLACK);
 		rightTextBox.setEditable(false);
 		
-		pushToBox(rightTextBox, "This program was designed for helping writers and script implementers in their tedious work with pscript files.");
+		pushToBox(rightTextBox, "This program was designed to help writers and script implementers in their tedious work with pscript files.");
 		pushToBox(rightTextBox, "");
 		pushToBox(rightTextBox, "It graphically represents all dialogue trees and shows mistakes that need to be fixed in order for game server to execute them right.");
 		pushToBox(rightTextBox, "");
@@ -66,15 +67,19 @@ public class AboutWindow extends JFrame {
 		pushToBox(rightTextBox, "");
 		pushToBox(rightTextBox, "~ Hit the `Documentation` button on the left and read what Deeplie has to say");
 		pushToBox(rightTextBox, "~ You can drag & drop .pscript files into the program window to open them quickly");
-		pushToBox(rightTextBox, "~ Use RightMouseButton and MouseWheel for navigating in Canvas");
-		pushToBox(rightTextBox, "~ You can move trees in Canvas by dragging red nodes with LeftMouseButton");
 		
 		pushToBox(rightTextBox, "");
 		pushToBox(rightTextBox, "___ Send your feedback ___");
 		pushToBox(rightTextBox, "");
 		pushToBox(rightTextBox, "My Discord is on the left, see `Creator` line. Please, send me your feedback, questions, ideas, and undetected mistakes.");
 		pushToBox(rightTextBox, "");
-		pushToBox(rightTextBox, "Before using the program, make sure you're having the latest version. Also, make sure the file has the `UTF-8` (without BOM) encoding.");
+		pushToBox(rightTextBox, "Before using the program, make sure you're having the latest version.");
+		
+		SwingUtilities.invokeLater(new Runnable() {
+		    public void run() {
+		    	scrollpane.getVerticalScrollBar().setValue(0);
+		    }
+		});
 		
 		//////////////////////
 		//	Left side		//
@@ -98,7 +103,7 @@ public class AboutWindow extends JFrame {
 		
 		pushToBox(leftTextBox, "LoE .pscript Visualiser “Deeplie”");
 		pushToBox(leftTextBox, "Creator: Fess#2162");
-		pushToBox(leftTextBox, "Version: 2.08"); 
+		pushToBox(leftTextBox, "Version: 2.10"); 
 		pushToBox(leftTextBox, "");
 		pushToBox(leftTextBox, "LoE Script Implementation DEP"); 
 		
@@ -167,7 +172,6 @@ public class AboutWindow extends JFrame {
 		pack();
 		setLocationRelativeTo(Main.window);
 		setVisible(true);
-		
 	}
 	
 	private static void pushToBox(JTextArea area, String str) {

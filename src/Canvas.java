@@ -2,6 +2,7 @@
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
@@ -61,6 +62,7 @@ public class Canvas extends JPanel {
         g.fillRect(0, 0, savedImage.getWidth(), savedImage.getHeight());
         drawTrees(g);
         drawDirections(g);
+        drawLegend(g);
     }
 	
     public void paint(Graphics g) {
@@ -73,6 +75,25 @@ public class Canvas extends JPanel {
             	g.drawImage(savedImage, 0, 0, null);
             }
         }
+    }
+    
+    private void drawLegend(Graphics g) {
+    	Font font = new Font("Verdana", Font.TRUETYPE_FONT, 12);
+    	FontMetrics fontMetrics = getFontMetrics(font);
+    	double widening = 1.2;
+    	String[] hint = {
+    			"Use Right Mouse Button and Mouse Wheel for navigating", 
+    			"You can drag & drop red nodes to solve overlapping"
+    			};
+    	
+    	g.setColor(Color.darkGray);
+    	g.setFont(font);
+    	
+    	for (int i = 0; i < hint.length; ++i) {
+    		int Y = (int) Math.round(getHeight() + 5 - widening * (hint.length - i) * fontMetrics.getHeight());
+    		g.drawString(hint[i], 10, Y);
+    	}
+		
     }
     
     private void drawTrees(Graphics g) {
@@ -140,7 +161,7 @@ public class Canvas extends JPanel {
     	}
     }
     
-    private void drawNode(Graphics g, Node node, double angle) {    	
+    private void drawNode(Graphics g, Node node, double angle) {  	
 
     	int childrenCount = node.getChildren().size();
     	double step = spray / (double) (childrenCount  + 1);

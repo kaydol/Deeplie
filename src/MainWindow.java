@@ -50,13 +50,13 @@ public class MainWindow extends JFrame {
 	public static JTextArea errorDescription;
 	
 	private static FileNameExtensionFilter filter = new FileNameExtensionFilter("pscript file (.pscript .txt)", "pscript", "txt");
+	private static String[] supportedEncodings = new String[] {"UTF-8", "US-ASCII", "ISO-8859-1"};
 	
-	public static String prefix_error = "   ";
-	public static String prefix_example = "         ";
-	public static String prefix_info = "";
-	public static String ProgramName = "LoE .pscript Visualiser “Deeplie”";
-	public static Font menuFont = new Font("Verdana", Font.PLAIN, 12);
-	public static Font consoleFont = new Font("Courier New", Font.PLAIN, 15);
+	private static String prefix_error = "   ";
+	private static String prefix_info = "";
+	private static String ProgramName = "LoE .pscript Visualiser “Deeplie”";
+	private static Font menuFont = new Font("Verdana", Font.PLAIN, 12);
+	private static Font consoleFont = new Font("Courier New", Font.PLAIN, 15);
 	public static TextLineNumber EditorPane;
 	
 	private static boolean freshlyOpened = true; 
@@ -100,12 +100,11 @@ public class MainWindow extends JFrame {
     	//	Adding		//
     	//////////////////
     	
-    	//JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, canvasHolder, consoleScrollpane);
-    	
     	JTextPane textPane = new JTextPane();
     	JScrollPane scrollPane = new JScrollPane(textPane);
     	EditorPane = new TextLineNumber(textPane);
-    	scrollPane.setRowHeaderView( EditorPane );
+    	EditorPane.setEditorFont(consoleFont);
+    	scrollPane.setRowHeaderView(EditorPane);
     	scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
     	
     	JPanel EditorWrap = new JPanel(new BorderLayout());
@@ -119,6 +118,7 @@ public class MainWindow extends JFrame {
 		EditorWrap.add(errorDescription, BorderLayout.SOUTH);
 		EditorWrap.setBorder(outer);
 		
+		//  Icons for tabs
     	ImageIcon editorIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("application_edit.png")));
     	ImageIcon consoleIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("application_xp_terminal.png")));
     	ImageIcon canvasIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("canvas.png")));
@@ -143,20 +143,16 @@ public class MainWindow extends JFrame {
 					List<File> files = (List<File>) t.getTransferData(DataFlavor.javaFileListFlavor);
 					if (files.size() > 0) {
 						File f = files.get(0);
-						if (filter.accept(f)) {
-							LastLoadedFile = f;
-							parser.readFromFile(f.getAbsolutePath());
-							updateState(true);
-						}
+						if (filter.accept(f))
+							tryToReadFromFile(LastLoadedFile, supportedEncodings);
 						else 
 							JOptionPane.showMessageDialog(null, "File should have either .txt or .pscript extension", "Terminated", JOptionPane.ERROR_MESSAGE);
 					}
 					if (files.size() > 1)
-						pushToLog(-1, "Info: when you drag & drop more than 1 files, only one is processed");
-					
+						JOptionPane.showMessageDialog(null, "When you drag & drop multiple files at once, only the first one is processed", "Some files weren't processed", JOptionPane.INFORMATION_MESSAGE);
+        
 				} catch (UnsupportedFlavorException | IOException  e) {
-					JOptionPane.showMessageDialog(null, "Make sure the file is in UTF-8 encoding", "Terminated", JOptionPane.ERROR_MESSAGE);
-        			//e.printStackTrace();
+					JOptionPane.showMessageDialog(null, "Can't read the file", "Terminated", JOptionPane.ERROR_MESSAGE);
 				}
 				return true; 
 			}
@@ -216,8 +212,6 @@ public class MainWindow extends JFrame {
 			msg = prefix_error + msg;
 		if (msg.trim().startsWith("Info:"))
 			msg = prefix_info + msg;
-		if (msg.trim().startsWith("Valid"))
-			msg = prefix_error + '|' + prefix_example + msg;
 		
 		if (lineNumber >= 0)
 			msg += ", at line " + lineNumber;
@@ -226,28 +220,44 @@ public class MainWindow extends JFrame {
 		console.setText(log);
 	}
 	
-	public static JMenuBar createMenuBar() {
+	private JMenuBar createMenuBar() {
+		
 		JMenuBar menuBar = new JMenuBar();
-         
+		
+		//  Icons for actions
+		ImageIcon undoIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("undo.png")));
+    	ImageIcon redoIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("redo.png")));
+    	ImageIcon saveIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("save.png")));
+    	ImageIcon reloadIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("reload.png")));
+    	ImageIcon createNewIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("new.png")));
+    	ImageIcon loadIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("load.png")));
+    	ImageIcon quickFixIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("quick_fix.png")));
+    	ImageIcon aboutIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("about.png")));
+    	ImageIcon supportedCommandsIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("hint.png")));
+    	
+    	
         JMenu fileMenu = new JMenu("File");
         fileMenu.setFont(menuFont);
         
         JMenuItem item_newFile = new JMenuItem("Create new file ");
         item_newFile.setFont(menuFont);
+        item_newFile.setIcon(createNewIcon);
         fileMenu.add(item_newFile);
         item_newFile.addActionListener(new ActionListener() {           
 	            public void actionPerformed(ActionEvent e) {
-	            	LastLoadedFile = null;
 	            	freshlyOpened = true;
 	            	parser.clearData();
 	            	EditorPane.clearData();
+	            	LastLoadedFile = null;
 	            	updateState(false);
+	            	unsavedChanges(false);
 	            }           
 	        });
         item_newFile.setAccelerator(KeyStroke.getKeyStroke("control N"));
         
         
-        JMenuItem item_loadFile = new JMenuItem("Load .pscript file ");
+        JMenuItem item_loadFile = new JMenuItem("Open .pscript file ");
+        item_loadFile.setIcon(loadIcon);
         item_loadFile.setFont(menuFont);
         fileMenu.add(item_loadFile);
         item_loadFile.addActionListener(new ActionListener() {           
@@ -255,49 +265,35 @@ public class MainWindow extends JFrame {
 	            	JFileChooser fileopen = new JFileChooser();
 	            	fileopen.setCurrentDirectory(new File(System.getProperty("user.dir")));
 	            	fileopen.setFileFilter(filter);
-	            	int ret = fileopen.showDialog(null, "Load .pscript file");                
+	            	int ret = fileopen.showDialog(null, "Open .pscript file");                
 	                if (ret == JFileChooser.APPROVE_OPTION) {
 	                    File file = fileopen.getSelectedFile();
 	                    if (file.exists()) {
-	                		try {
-	                			LastLoadedFile = file;
-	                			parser.readFromFile(LastLoadedFile.getAbsolutePath());
-								updateState(true);
-	                		} catch (IOException e1) {
-	                			JOptionPane.showMessageDialog(null, "Make sure the file is in UTF-8 encoding", "Terminated", JOptionPane.ERROR_MESSAGE);
-	                			//e1.printStackTrace();
-	                		}
+	                    	tryToReadFromFile(file, supportedEncodings);
 	                    } else
 	                    	JOptionPane.showMessageDialog(null, "Input file '" + file.getName() + "' does not exist", "Terminated", JOptionPane.ERROR_MESSAGE);
-	                }          
-	            }           
+	                }
+	            }
 	        });
         item_loadFile.setAccelerator(KeyStroke.getKeyStroke("control L"));
         
         JMenuItem item_reloadFile = new JMenuItem("Reload file from drive ");
+        item_reloadFile.setIcon(reloadIcon);
         item_reloadFile.setFont(menuFont);
         fileMenu.add(item_reloadFile);
         item_reloadFile.addActionListener(new ActionListener() {           
 	            public void actionPerformed(ActionEvent e) {
 	            	if (LastLoadedFile == null) {
-	            		JOptionPane.showMessageDialog(null, "You didn't load any files yet, nothing to reload", "CTRL+R", JOptionPane.INFORMATION_MESSAGE);
+	            		JOptionPane.showMessageDialog(null, "Can't reload the file :" + System.lineSeparator() + "First you need to Open a file, or Save the current one", "CTRL+R", JOptionPane.INFORMATION_MESSAGE);
 	            		return;
 	            	}
 	            	if (LastLoadedFile.exists()) {
 	            		int response = JOptionPane.YES_OPTION;
 	            		if (unsavedChanges)
 	            			response = JOptionPane.showConfirmDialog(null, "Reload the file from hard drive?" + System.lineSeparator() + "You will lose all unsaved changes.", "Confirm", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-	            		if (response == JOptionPane.YES_OPTION) {
-                	    	try {
-                    			parser.readFromFile(LastLoadedFile.getAbsolutePath());
-    							updateState(true);
-                    		} catch (IOException e1) {
-                    			JOptionPane.showMessageDialog(null, "Make sure the file is in UTF-8 encoding", "Terminated", JOptionPane.ERROR_MESSAGE);
-                    			//e1.printStackTrace();
-                    			return;
-                    		}
-                	    	
-                	    } else
+	            		if (response == JOptionPane.YES_OPTION)
+	            			tryToReadFromFile(LastLoadedFile, supportedEncodings);
+                	    else
                 	    	return;
 	            		
                     } else
@@ -308,22 +304,52 @@ public class MainWindow extends JFrame {
         
         
         JMenuItem item_saveToFile = new JMenuItem("Save file to drive");
+        item_saveToFile.setIcon(saveIcon);
         item_saveToFile.setFont(MainWindow.menuFont);
         fileMenu.add(item_saveToFile);
         item_saveToFile.addActionListener(new ActionListener() {           
 	            public void actionPerformed(ActionEvent e) {
 	            	if (LastLoadedFile == null) {
 	            		JFileChooser filecreate = new JFileChooser();
+	            		filecreate.setSelectedFile(new File("New.pscript"));
 	            		filecreate.setCurrentDirectory(new File(System.getProperty("user.dir")));
 	            		filecreate.setFileFilter(filter);
 		            	int ret = filecreate.showDialog(null, "Create .pscript file");                
 		                if (ret == JFileChooser.APPROVE_OPTION) {
 		                    File file = filecreate.getSelectedFile();
+		                    //  if the file with the given name doesn't exist, create it
 		                    if (!file.exists()) {
-	                			LastLoadedFile = file;
-	                			updateState(true);
-		                    } else
-		                    	JOptionPane.showMessageDialog(null, "File '" + file.getName() + "' already exists", "Terminated", JOptionPane.ERROR_MESSAGE);
+		                    	//  this block creates the file or throws an error
+	                			try {
+									file.createNewFile();
+									LastLoadedFile = file;
+									updateState(true);
+								}
+	                			catch (IOException e1) {
+	                				//  throw an error if the file wasn't created
+	                				LastLoadedFile = null;
+	                				JOptionPane.showMessageDialog(null, "File '" + file.getName() + "' wasn't created", "Terminated", JOptionPane.ERROR_MESSAGE);
+								}
+		                    } else {
+		                    	//  if the file with given name already exist, we ask if we should rewrite that file
+		                    	int response = JOptionPane.showConfirmDialog(null, "File '" + file.getName() + "' already exists." + System.lineSeparator() + "Rewrite the file? All information in that file will be lost", "Confirm", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+			            		if (response == JOptionPane.YES_OPTION) {
+			            			//  this block creates the file or throws an error
+		                			try {
+										file.createNewFile();
+										LastLoadedFile = file;
+										updateState(true);
+									}
+		                			catch (IOException e1) {
+		                				//  throw an error if the file wasn't created
+		                				LastLoadedFile = null;
+		                				JOptionPane.showMessageDialog(null, "File '" + file.getName() + "' wasn't created", "Terminated", JOptionPane.ERROR_MESSAGE);
+									}
+		                	    	
+		                	    } else
+		                	    	return;
+		                    }
+		                    
 		                }
 	            	}
 	            	EditorPane.writeToFile();
@@ -336,16 +362,19 @@ public class MainWindow extends JFrame {
         advancedMenu.setFont(menuFont);
         
         item_undo = new JMenuItem(EditorPane.undoAction);
+        item_undo.setIcon(undoIcon);
         item_undo.setFont(menuFont);
         item_undo.setAccelerator(KeyStroke.getKeyStroke("control Z"));
         advancedMenu.add(item_undo);
         
         item_redo = new JMenuItem(EditorPane.redoAction);
+        item_redo.setIcon(redoIcon);
         item_redo.setFont(menuFont);
         item_redo.setAccelerator(KeyStroke.getKeyStroke("control Y"));
         advancedMenu.add(item_redo);
         
         JMenuItem item_openAdvanced = new JMenuItem("Quick fix...");
+        item_openAdvanced.setIcon(quickFixIcon);
         item_openAdvanced.setFont(menuFont);
         advancedMenu.add(item_openAdvanced);
         item_openAdvanced.addActionListener(new ActionListener() {           
@@ -361,20 +390,22 @@ public class MainWindow extends JFrame {
         
         JMenu aboutMenu = new JMenu("About");
         aboutMenu.setFont(menuFont);
-	        JMenuItem item_openAbout = new JMenuItem("Open about");
-	        item_openAbout.setFont(menuFont);
-	        aboutMenu.add(item_openAbout);
-	        item_openAbout.addActionListener(new ActionListener() {           
-	            public void actionPerformed(ActionEvent e) {
-	            	if (aboutWindow == null) {
-	            		aboutWindow = new AboutWindow();
-	            		return;
-	            	}
-	            	aboutWindow.setVisible(true);
-	            	aboutWindow.toFront();
-	            }           
-	        });
+        JMenuItem item_openAbout = new JMenuItem("Open about");
+        item_openAbout.setIcon(aboutIcon);
+        item_openAbout.setFont(menuFont);
+        aboutMenu.add(item_openAbout);
+        item_openAbout.addActionListener(new ActionListener() {           
+            public void actionPerformed(ActionEvent e) {
+            	if (aboutWindow == null) {
+            		aboutWindow = new AboutWindow();
+            		return;
+            	}
+            	aboutWindow.setVisible(true);
+            	aboutWindow.toFront();
+            }           
+        });
         JMenuItem item_openCommands = new JMenuItem("Supported commands");
+        item_openCommands.setIcon(supportedCommandsIcon);
         item_openCommands.setFont(menuFont);
         aboutMenu.add(item_openCommands);
         item_openCommands.addActionListener(new ActionListener() {           
@@ -424,5 +455,33 @@ public class MainWindow extends JFrame {
     public static void refreshControls() {
     	item_undo.setEnabled(EditorPane.undoManager.canUndo());
     	item_redo.setEnabled(EditorPane.undoManager.canRedo());
+    }
+    
+    private static void tryToReadFromFile(File file, String[] encodings) {
+
+    	boolean successful_read = false;
+    	for (String encoding : encodings) {
+    		try {
+    			//  Attempting to read the file using given encoding
+    			parser.readFromFile(file.getAbsolutePath(), encoding);
+    			LastLoadedFile = file;
+    			updateState(true);
+    			successful_read = true;
+    			if (encoding != "UTF-8") 
+    				JOptionPane.showMessageDialog(null, 
+    						"File is not in UTF-8 encoding, but contains special symbols." + System.lineSeparator() + 
+    						"Those symbols might be displayed incorrectly (and appear as squares)." + System.lineSeparator() + System.lineSeparator() +
+    						"To avoid broken symbols just copy all text from the file and paste it" + System.lineSeparator() +
+    						"directly into Deeplie's Text Editor, then save the file via CTRL+S." + System.lineSeparator() +
+    						"This will change the encoding to recommended UTF-8."
+    					, "Your encoding is " + encoding, JOptionPane.INFORMATION_MESSAGE);
+    			break;
+    		}
+    		catch (IOException e) {}
+    	}
+    	
+    	if (!successful_read)
+    		JOptionPane.showMessageDialog(null, "The encoding of given file is not supported and can't be read", "Terminated", JOptionPane.ERROR_MESSAGE);
+
     }
 }

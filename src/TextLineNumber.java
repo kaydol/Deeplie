@@ -58,15 +58,20 @@ public class TextLineNumber extends JPanel implements CaretListener, DocumentLis
     private int lastHeight;
     private int lastLine;
 
+    private boolean needToClearSearchQuery = false; // this flag is to optimize clearing searchQuery after selection is gone; prevents huge lags when cursor is in move
 	private HashMap<String, FontMetrics> fonts;
+	
 	private int imageSize = 16;
 	private int imageSpacing = 10;
 	private ImageIcon errorIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("attention.png")).getScaledInstance(imageSize, imageSize, Image.SCALE_DEFAULT));
 	private ImageIcon todoIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("todo.png")).getScaledInstance(imageSize, imageSize, Image.SCALE_DEFAULT));
+	private ImageIcon noteIcon = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("attachment.png")).getScaledInstance(imageSize, imageSize, Image.SCALE_DEFAULT));
+	
 	private Object highlightTag = null;
 	public UndoManager undoManager;
 	public RedoAction redoAction;
 	public UndoAction undoAction;
+	private Timer parsingTimer;
 	
 	/**
 	 *	Create a line number component for a text component. This minimum
@@ -94,26 +99,23 @@ public class TextLineNumber extends JPanel implements CaretListener, DocumentLis
     	
 		this.component = component;
 		
-		setFont( MainWindow.consoleFont );
-		component.setFont( MainWindow.consoleFont );
-		
 		setBorderGap( 5 );
 		setCurrentLineForeground( Color.RED );
 		setDigitAlignment( RIGHT );
 		setMinimumDisplayDigits( minimumDisplayDigits );
 		
-		Timer parsingTimer = new Timer(1500, new ActionListener() {
+		parsingTimer = new Timer(1500, new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				MainWindow.parser.setText(getEditorContent());
 				MainWindow.updateState(false);
 				if (panel.isShowing())
 					panel.repaint();
-				
 				try {
 					int line = getLineOfOffset(component, component.getCaret().getDot());
 					updateErrorMessage(line);
-				} catch (BadLocationException e) {
+				}
+				catch (BadLocationException e) {
 					e.printStackTrace();
 				}
 			}
@@ -165,6 +167,17 @@ public class TextLineNumber extends JPanel implements CaretListener, DocumentLis
 					if (Line != null)
 						highlightTag = contentHL.addHighlight(Line.getStartOffset(), Line.getEndOffset(), contentPainter);
 					
+					// Un-highlight all previously highlighted text
+					if (needToClearSearchQuery) {
+						doc.clearSearchQuery();
+						needToClearSearchQuery = false;
+					}
+					// Highlighting all fragments of text that match mouse selection
+					if (component.getSelectedText() != null) {
+						doc.highlightSearchQuery(component.getSelectedText());
+						needToClearSearchQuery = true;
+					};
+					
 				} catch (BadLocationException e1) {
 					e1.printStackTrace();
 				}
@@ -192,10 +205,8 @@ public class TextLineNumber extends JPanel implements CaretListener, DocumentLis
             {
 				public void undoableEditHappened(UndoableEditEvent evt)
 				{
-					//if (!evt.getEdit().getPresentationName().equals("style change")) {
-						undoManager.addEdit(evt.getEdit());
-						MainWindow.refreshControls();
-					//};
+					undoManager.addEdit(evt.getEdit());
+					MainWindow.refreshControls();
 				}
             });
         }
@@ -343,8 +354,8 @@ public class TextLineNumber extends JPanel implements CaretListener, DocumentLis
 		if (lastDigits != digits)
 		{
 			lastDigits = digits;
-			FontMetrics fontMetrics = getFontMetrics( getFont() );
-			int width = fontMetrics.charWidth( '0' ) * digits;
+			FontMetrics fontMetrics = getFontMetrics(getFont());
+			int width = fontMetrics.charWidth('0') * digits;
 			Insets insets = getInsets();
 			int preferredWidth = insets.left + insets.right + width;
 
@@ -362,7 +373,8 @@ public class TextLineNumber extends JPanel implements CaretListener, DocumentLis
 	public void paintComponent(Graphics g)
 	{
 		super.paintComponent(g);
-
+		g.setFont(component.getFont());
+		
 		//	Determine the width of the space available to draw the line number
 
 		FontMetrics fontMetrics = component.getFontMetrics( component.getFont() );
@@ -396,8 +408,12 @@ public class TextLineNumber extends JPanel implements CaretListener, DocumentLis
     			//  Draw error icon
     			if (lineNumber.length() > 0) {
     				int num = Integer.parseInt(lineNumber);
-    				if (MainWindow.parser.ToDos.containsKey(num))
-    					g.drawImage(todoIcon.getImage(), x - imageSize - imageSpacing, y - imageSize + 4, null);
+    				if (MainWindow.parser.Notes.containsKey(num)) {
+    					if (MainWindow.parser.Notes.get(num) == "TODO")
+    						g.drawImage(todoIcon.getImage(), x - imageSize - imageSpacing, y - imageSize + 4, null);
+    					if (MainWindow.parser.Notes.get(num) == "NOTE")
+    						g.drawImage(noteIcon.getImage(), x - imageSize - imageSpacing, y - imageSize + 4, null);
+    				}
     				if (MainWindow.parser.Errors.containsKey(num))
     					g.drawImage(errorIcon.getImage(), x - imageSize - imageSpacing, y - imageSize + 4, null);
     			}
@@ -596,6 +612,12 @@ public class TextLineNumber extends JPanel implements CaretListener, DocumentLis
 		}
 	}
 	
+	public void setEditorFont(Font font)
+	{
+		component.setFont(font);
+		repaint();
+	}
+	
 	public void loadText(List<String> text) {
 		loadText(Parser.addLinesToText(text));
 	}
@@ -620,9 +642,11 @@ public class TextLineNumber extends JPanel implements CaretListener, DocumentLis
 		SwingUtilities.invokeLater(new Runnable() {
 		    public void run() {
 		    	contentScrollPane.getVerticalScrollBar().setValue(scrollBarPos);
-		    	
 		    }
 		});
+		
+		//  prevents from second scan after file was loaded
+		parsingTimer.stop();
 	}
 	
 	public List<String> getEditorContent() {

@@ -44,9 +44,9 @@ public class ReplaceWindow extends JFrame {
 		JCheckBox box_speechSpace = new JCheckBox("Put a space before Speech in NPCNAME:Speech");
 		JCheckBox box_replySpace = new JCheckBox("Put 1 space after each > symbol in Responses");
 		JCheckBox box_capitalize = new JCheckBox("Captialize $PLAYERNAME, BEGINNING & END in labels and gotos");
-		JCheckBox box_quotes = new JCheckBox("Replace every ' with ’");
-		JCheckBox box_dots1 = new JCheckBox("Replace each 3 dots (...) with 1 symbol (…)");
-		JCheckBox box_dots2 = new JCheckBox("Replace each … with 3 dots (...)");
+		JCheckBox box_quotes = new JCheckBox("Replace every ' (apostrophe) with ’");
+		JCheckBox box_dots1 = new JCheckBox("Replace each 3 dots (...) with 1 triple dot (…)");
+		JCheckBox box_dots2 = new JCheckBox("Replace each triple dot (…) with 3 dots (...)");
 		
 		Font font = new Font("Verdana", Font.PLAIN, 12);
 		box_doubleSpace.setFont(font);
