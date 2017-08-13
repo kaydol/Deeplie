@@ -2,6 +2,7 @@ import java.awt.Color;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.swing.SwingUtilities;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultEditorKit;
@@ -224,12 +225,16 @@ public class PscriptDocument extends DefaultStyledDocument  {
 	    }
 	    
 	    public void clearSearchQuery() {
-	    	try {
-	    		doc.setCharacterAttributes(0, doc.getLength(), searchQueryNoBackground, false);
-	    	} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+	    	SwingUtilities.invokeLater(new Runnable() {
+    		    public void run() {
+    		    	try {
+    		    		doc.setCharacterAttributes(0, doc.getLength(), searchQueryNoBackground, false);
+    		    	} catch (Exception e) {
+    					// TODO Auto-generated catch block
+    					e.printStackTrace();
+    				}
+    		    }
+    		});
 	    }
 	    
 	    public void highlightSearchQuery(String query) {

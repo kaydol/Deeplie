@@ -82,8 +82,8 @@ public class Canvas extends JPanel {
     	FontMetrics fontMetrics = getFontMetrics(font);
     	double widening = 1.2;
     	String[] hint = {
-    			"Use Right Mouse Button and Mouse Wheel for navigating", 
-    			"You can drag & drop red nodes to solve overlapping"
+    			"Use [Right Mouse Button] and [Mouse Wheel] for navigating", 
+    			"You can drag & drop red nodes to get rid of overlapping"
     			};
     	
     	g.setColor(Color.darkGray);

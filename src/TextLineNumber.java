@@ -634,6 +634,9 @@ public class TextLineNumber extends JPanel implements CaretListener, DocumentLis
         	for (int i = 1; i < text.size() + 1; i++) {
         		doc.insertString(doc.getLength(), text.get(i) + "\n", null);
         	}
+        	
+        	undoManager.discardAllEdits();
+        	undoAction.setEnabled(false); //  for some reason this has no effect >~>
         }
 	    catch (BadLocationException e) {
         	e.printStackTrace();

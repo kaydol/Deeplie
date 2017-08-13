@@ -103,7 +103,7 @@ public class AboutWindow extends JFrame {
 		
 		pushToBox(leftTextBox, "LoE .pscript Visualiser “Deeplie”");
 		pushToBox(leftTextBox, "Creator: Fess#2162");
-		pushToBox(leftTextBox, "Version: 2.10"); 
+		pushToBox(leftTextBox, "Version: 2.11.1"); 
 		pushToBox(leftTextBox, "");
 		pushToBox(leftTextBox, "LoE Script Implementation DEP"); 
 		
@@ -149,9 +149,6 @@ public class AboutWindow extends JFrame {
 		JPanel buttsBackground = new JPanel(new GridLayout(2, 1)); 
 		buttsBackground.add(docsButtHolder);
 		buttsBackground.add(updButtHolder);
-		
-		
-		
 		
 		left.add(buttsBackground, BorderLayout.SOUTH);
 		

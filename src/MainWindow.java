@@ -8,8 +8,13 @@ import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.List;
 
 import javax.swing.BorderFactory;
@@ -144,7 +149,7 @@ public class MainWindow extends JFrame {
 					if (files.size() > 0) {
 						File f = files.get(0);
 						if (filter.accept(f))
-							tryToReadFromFile(LastLoadedFile, supportedEncodings);
+							tryToReadFromFile(f, supportedEncodings);
 						else 
 							JOptionPane.showMessageDialog(null, "File should have either .txt or .pscript extension", "Terminated", JOptionPane.ERROR_MESSAGE);
 					}
@@ -166,6 +171,21 @@ public class MainWindow extends JFrame {
 		pack();
 		setLocationRelativeTo(null);
 		setVisible(true);
+		
+		//  Loading introduction example
+		SwingUtilities.invokeLater(new Runnable() {
+		    public void run() {
+		    	try {
+					parser.readFromStream(getClass().getResourceAsStream("/Introduction"));
+					LastLoadedFile = null;
+					updateState(true);
+				}
+		    	catch (IOException e) {}
+		    }
+		});
+		
+		
+		
 	}
 	
 	public static void updateState(boolean reloadEditor) {
@@ -482,6 +502,6 @@ public class MainWindow extends JFrame {
     	
     	if (!successful_read)
     		JOptionPane.showMessageDialog(null, "The encoding of given file is not supported and can't be read", "Terminated", JOptionPane.ERROR_MESSAGE);
-
+    		
     }
 }

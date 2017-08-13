@@ -1,7 +1,10 @@
 
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -83,7 +86,22 @@ public class Parser {
 		
 		List<String> text = Files.readAllLines(file.toPath(), Charset.forName(encoding));
 		setText(text);
+	}
+	
+	public void readFromStream(InputStream stream) throws IOException {
 		
+		BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+		String line = null;
+		List<String> text = new ArrayList<String>();
+		
+		do {
+			line = reader.readLine();
+			if (line != null)
+				text.add(line);
+		}
+		while (line != null);
+		
+		setText(text);
 	}
 	
 	public void setText(List<String> text) {

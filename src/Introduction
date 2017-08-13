@@ -1,0 +1,20 @@
+#==  Quick introduction into -> Text Editor <- ==#
+
+#==# If the comment starts from the keyword "NOTE", it will be marked by a special notepad icon:
+
+# NOTE By using keywords in comments you can easily mark certain spots in the script to emphasize something or to get someone's attention. 
+
+#==# Same goes for "TODO" keyword, though it has a different icon:
+
+# TODO Keep in mind that this editor is not perfect and can't detect all the mistakes + not every mistake produces an error while server starts to execute it.
+
+#==# If the line contains errors, it will be marked by a warning sign icon:
+* gotoEND # If you click on this line, the error will be displayed at the bottom
+
+#==# If you select a word or a letter with your mouse, all matching letters will be highlighted with color. For example, try to select this -> 8 <-
+
+686868886866686668886
+686868666866686668686
+688868886866686668686
+686868666866686668686
+686868886888688868886
